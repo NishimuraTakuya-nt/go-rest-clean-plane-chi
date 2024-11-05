@@ -1,16 +1,8 @@
-package middleware
+package custommiddleware
 
 import "net/http"
 
 type Middleware func(http.Handler) http.Handler
-
-// Chain applies a series of middleware to a http.Handler
-func Chain(h http.Handler, middleware ...Middleware) http.Handler {
-	for i := len(middleware) - 1; i >= 0; i-- {
-		h = middleware[i](h)
-	}
-	return h
-}
 
 type ResponseWriter struct {
 	http.ResponseWriter

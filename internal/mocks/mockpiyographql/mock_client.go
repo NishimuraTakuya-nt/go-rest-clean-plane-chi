@@ -35,32 +35,32 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// GetUser mocks base method.
-func (m *MockClient) GetUser(ctx context.Context, id string) (*models.User, error) {
+// GetSample mocks base method.
+func (m *MockClient) GetSample(ctx context.Context, id string) (*models.Sample, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUser", ctx, id)
-	ret0, _ := ret[0].(*models.User)
+	ret := m.ctrl.Call(m, "GetSample", ctx, id)
+	ret0, _ := ret[0].(*models.Sample)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUser indicates an expected call of GetUser.
-func (mr *MockClientMockRecorder) GetUser(ctx, id interface{}) *gomock.Call {
+// GetSample indicates an expected call of GetSample.
+func (mr *MockClientMockRecorder) GetSample(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockClient)(nil).GetUser), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSample", reflect.TypeOf((*MockClient)(nil).GetSample), ctx, id)
 }
 
-// ListUser mocks base method.
-func (m *MockClient) ListUser(ctx context.Context, offset, limit *int) ([]models.User, error) {
+// ListSample mocks base method.
+func (m *MockClient) ListSample(ctx context.Context, offset, limit *int) ([]models.Sample, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListUser", ctx, offset, limit)
-	ret0, _ := ret[0].([]models.User)
+	ret := m.ctrl.Call(m, "ListSample", ctx, offset, limit)
+	ret0, _ := ret[0].([]models.Sample)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListUser indicates an expected call of ListUser.
-func (mr *MockClientMockRecorder) ListUser(ctx, offset, limit interface{}) *gomock.Call {
+// ListSample indicates an expected call of ListSample.
+func (mr *MockClientMockRecorder) ListSample(ctx, offset, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUser", reflect.TypeOf((*MockClient)(nil).ListUser), ctx, offset, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSample", reflect.TypeOf((*MockClient)(nil).ListSample), ctx, offset, limit)
 }

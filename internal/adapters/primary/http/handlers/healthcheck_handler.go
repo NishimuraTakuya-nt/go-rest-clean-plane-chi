@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
@@ -15,15 +14,6 @@ type HealthcheckHandler struct {
 func NewHealthcheckHandler(log logger.Logger) *HealthcheckHandler {
 	return &HealthcheckHandler{
 		log: log,
-	}
-}
-
-func (h *HealthcheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/healthcheck"):
-		h.Get(w, r)
-	default:
-		http.NotFound(w, r)
 	}
 }
 

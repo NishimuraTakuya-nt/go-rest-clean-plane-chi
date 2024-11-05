@@ -11,6 +11,7 @@ import (
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/common/contextkeys"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 // Logger インターフェース
@@ -58,8 +59,8 @@ func NewLogger() Logger {
 // addStandardFields 標準フィールドを追加
 func (l *customLogger) addStandardFields(ctx context.Context, args []any) []any {
 	if ctx != nil {
-		if r, ok := ctx.Value(contextkeys.RequestIDKey).(string); ok {
-			args = append(args, "request_id", r)
+		if requestID := middleware.GetReqID(ctx); requestID != "" {
+			args = append(args, "request_id", requestID)
 		}
 		if u, ok := ctx.Value(contextkeys.UserIDKey).(string); ok {
 			args = append(args, "user_id", u)
@@ -70,8 +71,10 @@ func (l *customLogger) addStandardFields(ctx context.Context, args []any) []any 
 				"method", r.Method,
 				"remote_ip", r.RemoteAddr,
 				"user_agent", r.UserAgent(),
+				"referer", r.Referer(),
 			)
 		}
+
 	}
 	return args
 }

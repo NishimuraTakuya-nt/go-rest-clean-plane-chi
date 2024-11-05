@@ -3,11 +3,12 @@ module github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi
 go 1.23.0
 
 require (
+	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/cors v1.2.1
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.61.0
-	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0

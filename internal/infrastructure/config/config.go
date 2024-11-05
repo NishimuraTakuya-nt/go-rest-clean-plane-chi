@@ -26,6 +26,7 @@ func init() {
 	v.SetDefault("allowed_origins", []string{"*"})
 	v.SetDefault("jwt_secret_key", "jwt-secret")
 	v.SetDefault("request_timeout", 180*time.Second)
+	//v.SetDefault("request_timeout", 1*time.Second)
 
 	viper.AutomaticEnv()
 	if err := v.Unmarshal(&Config); err != nil {

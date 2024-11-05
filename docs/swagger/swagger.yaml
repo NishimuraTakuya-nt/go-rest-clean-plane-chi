@@ -1,69 +1,58 @@
 basePath: /api/v1
 definitions:
-  request.HobbyRequest:
-    description: Hobby information
-    properties:
-      id:
-        minimum: 1
-        type: integer
-      name:
-        maxLength: 50
-        minLength: 2
-        type: string
-    required:
-    - name
-    type: object
   request.LoginRequest:
     description: LoginRequest is a struct that represents the request of login
     properties:
       password:
         type: string
-      username:
+      user_id:
         type: string
     type: object
-  request.SpecRequest:
+  request.SampleDetail:
+    description: Sample detail information
     properties:
       id:
         minimum: 1
         type: integer
-      tall:
-        minimum: 1
-        type: integer
-      weight:
-        minimum: 1
-        type: integer
-    required:
-    - id
-    type: object
-  request.UserRequest:
-    description: User account information
-    properties:
-      age:
-        minimum: 1
-        type: integer
-      email:
-        maxLength: 50
-        minLength: 2
-        type: string
-      hobby:
-        $ref: '#/definitions/request.HobbyRequest'
-      id:
-        type: string
       name:
         maxLength: 50
         minLength: 2
         type: string
-      roles:
+      price:
+        minimum: 1
+        type: integer
+    required:
+    - id
+    - name
+    type: object
+  request.SampleRequest:
+    description: Sample information
+    properties:
+      array_val:
         items:
           type: string
         type: array
-      spec:
-        $ref: '#/definitions/request.SpecRequest'
+      email:
+        example: test@example.com
+        type: string
+      id:
+        description: 'refs: https://github.com/swaggo/swag#example-value-of-struct'
+        type: string
+      int_val:
+        minimum: 1
+        type: integer
+      sample_detail_not_required:
+        $ref: '#/definitions/request.SampleDetail'
+      sample_detail_required:
+        $ref: '#/definitions/request.SampleDetail'
+      string_val:
+        maxLength: 50
+        minLength: 2
+        type: string
     required:
-    - age
-    - email
-    - name
-    - spec
+    - int_val
+    - sample_detail_required
+    - string_val
     type: object
   response.ErrorResponse:
     description: Error response structure
@@ -78,19 +67,19 @@ definitions:
       type:
         type: string
     type: object
-  response.ListUserResponse:
-    description: User account list information
+  response.ListSampleResponse:
+    description: Sample list information
     properties:
       limit:
         type: integer
       offset:
         type: integer
+      samples:
+        items:
+          $ref: '#/definitions/response.SampleResponse'
+        type: array
       total_count:
         type: integer
-      users:
-        items:
-          $ref: '#/definitions/response.UserResponse'
-        type: array
     type: object
   response.LoginResponse:
     description: LoginResponse is a struct that represents the response of login
@@ -98,21 +87,23 @@ definitions:
       token:
         type: string
     type: object
-  response.UserResponse:
-    description: User account information
+  response.SampleResponse:
+    description: Sample information
     properties:
+      array_val:
+        items:
+          type: string
+        type: array
       created_at:
         type: string
       email:
         type: string
       id:
         type: string
-      name:
+      int_val:
+        type: integer
+      string_val:
         type: string
-      roles:
-        items:
-          type: string
-        type: array
       updated_at:
         type: string
     type: object
@@ -172,86 +163,11 @@ paths:
       summary: Health check endpoint
       tags:
       - healthcheck
-  /user:
-    post:
-      consumes:
-      - application/json
-      description: Create a new user
-      parameters:
-      - description: User information
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.UserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: User create
-      tags:
-      - user
-  /user/{id}:
+  /samples:
     get:
       consumes:
       - application/json
-      description: Get details of a user
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Get a user by ID
-      tags:
-      - user
-  /users:
-    get:
-      consumes:
-      - application/json
-      description: Get a list of users with pagination
+      description: Get a list of samples with pagination
       parameters:
       - default: 0
         description: Offset for pagination
@@ -271,7 +187,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.ListUserResponse'
+            $ref: '#/definitions/response.ListSampleResponse'
         "400":
           description: Bad Request
           schema:
@@ -280,9 +196,85 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ErrorResponse'
-      summary: List users
+      security:
+      - ApiKeyAuth: []
+      summary: List samples
       tags:
-      - user
+      - samples
+    post:
+      consumes:
+      - application/json
+      description: Create a new sample
+      parameters:
+      - description: Sample information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SampleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SampleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Sample create
+      tags:
+      - samples
+  /samples/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a sample
+      parameters:
+      - description: Sample ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SampleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a sample by ID
+      tags:
+      - samples
 securityDefinitions:
   ApiKeyAuth:
     in: header

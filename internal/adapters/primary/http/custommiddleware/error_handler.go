@@ -1,4 +1,4 @@
-package middleware
+package custommiddleware
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func ErrorHandler() func(http.Handler) http.Handler {
@@ -66,7 +67,7 @@ func ErrorHandler() func(http.Handler) http.Handler {
 func handleError(ctx context.Context, rw *ResponseWriter, err error) {
 	var res response.ErrorResponse
 	var statusCode int
-	requestID := GetRequestID(ctx)
+	requestID := middleware.GetReqID(ctx)
 
 	switch e := err.(type) {
 	case *apperrors.ValidationErrors:

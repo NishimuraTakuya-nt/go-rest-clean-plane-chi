@@ -29,7 +29,7 @@ assignees: ''
 - OS: [例: iOS]
 - ブラウザ [例: chrome, safari]
 - バージョン [例: 22]
-- API エンドポイント [例: /api/v1/users]
+- API エンドポイント [例: /api/v1/samples]
 
 ## 追加のコンテキスト
 問題に関する他の情報をここに追加してください。

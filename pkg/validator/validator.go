@@ -18,8 +18,8 @@ var (
 func initValidator() {
 	validate = validator.New()
 
-	// Register custom validation for user ID
-	_ = validate.RegisterValidation("userid", validateUserID)
+	// Register custom validation for sample ID
+	_ = validate.RegisterValidation("sampleId", sampleID)
 
 	// Add more custom validations here as needed
 }
@@ -49,9 +49,9 @@ func ValidateVar(field interface{}, tag string) error {
 	return GetValidator().Var(field, tag)
 }
 
-// validateUserID is a custom validation function for user IDs
-func validateUserID(fl validator.FieldLevel) bool {
-	// UserID must be alphanumeric and between 3 and 20 characters
+// sampleID is a custom validation function for sample IDs
+func sampleID(fl validator.FieldLevel) bool {
+	// sampleID must be alphanumeric and between 3 and 20 characters
 	return regexp.MustCompile(`^[a-zA-Z0-9]{3,20}$`).MatchString(fl.Field().String())
 }
 

@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers"
+	"github.com/go-chi/chi/v5"
 )
 
 type HealthcheckRouter struct {
-	healthcheckHandler *handlers.HealthcheckHandler
+	Handler http.Handler
 }
 
 func NewHealthcheckRouter(healthcheckHandler *handlers.HealthcheckHandler) *HealthcheckRouter {
-	return &HealthcheckRouter{healthcheckHandler: healthcheckHandler}
-}
+	r := chi.NewRouter()
+	r.Get("/", healthcheckHandler.Get)
 
-func (r *HealthcheckRouter) SetupHealthcheckRoutes(mux *http.ServeMux) {
-	mux.Handle("/healthcheck", r.healthcheckHandler)
+	return &HealthcheckRouter{Handler: r}
 }

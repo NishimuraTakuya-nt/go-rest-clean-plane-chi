@@ -3,60 +3,78 @@ package routes
 import (
 	"net/http"
 
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
-	httpSwagger "github.com/swaggo/http-swagger"
-
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/middleware"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/custommiddleware"
 	v1 "github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func NewRouter(
-	authUsecase usecases.AuthUsecase,
 	healthcheckRouter *v1.HealthcheckRouter,
+	authUsecase usecases.AuthUsecase,
+	sampleRouter *v1.SampleRouter,
 	authRouter *v1.AuthRouter,
-	userRouter *v1.UserRouter,
-	productRouter *v1.ProductRouter,
-	orderRouter *v1.OrderRouter,
 ) http.Handler {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
+	setupGlobalMiddleware(r)
+	setupSwagger(r)
+	setupAPIRoutes(r, healthcheckRouter, authUsecase, sampleRouter, authRouter)
+	return r
+}
 
-	// ルートハンドラの登録
-	mux.HandleFunc("/", handlers.HomeHandler)
+func setupGlobalMiddleware(r *chi.Mux) {
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   config.Config.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		ExposedHeaders:   []string{},
+		AllowCredentials: false,
+		MaxAge:           300, // 5 minutes
+	}))
+	r.Use(middleware.SetHeader("X-Content-Type-Options", "nosniff"))
+	r.Use(middleware.SetHeader("X-Frame-Options", "DENY"))
+	r.Use(custommiddleware.Context())
+	r.Use(custommiddleware.RequestLogger())
+	r.Use(custommiddleware.ErrorHandler())
+	r.Use(custommiddleware.Timeout(config.Config.RequestTimeout))
+}
+
+func setupSwagger(r *chi.Mux) {
 	// Swagger 2.0
-	mux.Handle("/swagger/2.0/", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
+	r.Get("/swagger/2.0/*", httpSwagger.Handler(httpSwagger.URL("/docs/swagger/swagger.json")))
 	// OAS 3.0
-	mux.Handle("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("/docs/swagger/openapi3.json"),
-	))
-	mux.Handle("/docs/swagger/", http.StripPrefix("/docs/swagger/", http.FileServer(http.Dir("./docs/swagger"))))
+	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/docs/swagger/openapi3.json")))
+	r.Handle("/docs/swagger/*", http.StripPrefix("/docs/swagger/", http.FileServer(http.Dir("./docs/swagger"))))
+}
 
-	// API v1 ルート
-	apiV1 := http.NewServeMux()
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", apiV1))
+func setupAPIRoutes(
+	r *chi.Mux,
+	healthcheckRouter *v1.HealthcheckRouter,
+	authUsecase usecases.AuthUsecase,
+	sampleRouter *v1.SampleRouter,
+	authRouter *v1.AuthRouter,
+) {
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/v1", func(r chi.Router) {
 
-	healthcheckRouter.SetupHealthcheckRoutes(apiV1)
-	authRouter.SetupAuthRoutes(apiV1)
-	userRouter.SetupUserRoutes(apiV1)
-	productRouter.SetupProductRoutes(apiV1)
-	orderRouter.SetupOrderRoutes(apiV1)
+			r.Group(func(r chi.Router) {
+				// 認証不要のパブリックルート
+				r.Mount("/healthcheck", healthcheckRouter.Handler)
+				r.Mount("/auth", authRouter.Handler)
+			})
 
-	// CORSの設定
-	corsConfig := middleware.DefaultCORSConfig()
-	corsConfig.AllowOrigins = config.Config.AllowedOrigins
-
-	// ミドルウェアの適用
-	handler := middleware.Chain(
-		mux,
-		middleware.Context(),
-		middleware.CORS(corsConfig),
-		middleware.Logging(),
-		middleware.ErrorHandler(),
-		middleware.Timeout(config.Config.RequestTimeout),
-		middleware.Authenticate(authUsecase), // fix 面倒なので一旦OFF
-	)
-	return handler
+			r.Group(func(r chi.Router) {
+				// 認証必要のプライベートルート
+				r.Use(custommiddleware.Authenticate(authUsecase))
+				r.Mount("/samples", sampleRouter.Handler)
+			})
+		})
+	})
 }

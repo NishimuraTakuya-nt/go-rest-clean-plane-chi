@@ -90,14 +90,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/user": {
-            "post": {
+        "/samples": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Create a new user",
+                "description": "Get a list of samples with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -105,17 +105,73 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "samples"
                 ],
-                "summary": "User create",
+                "summary": "List samples",
                 "parameters": [
                     {
-                        "description": "User information",
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Limit for pagination",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListSampleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create a new sample",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "samples"
+                ],
+                "summary": "Sample create",
+                "parameters": [
+                    {
+                        "description": "Sample information",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.UserRequest"
+                            "$ref": "#/definitions/request.SampleRequest"
                         }
                     }
                 ],
@@ -123,7 +179,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.UserResponse"
+                            "$ref": "#/definitions/response.SampleResponse"
                         }
                     },
                     "400": {
@@ -147,14 +203,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/{id}": {
+        "/samples/{id}": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get details of a user",
+                "description": "Get details of a sample",
                 "consumes": [
                     "application/json"
                 ],
@@ -162,13 +218,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "samples"
                 ],
-                "summary": "Get a user by ID",
+                "summary": "Get a sample by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
+                        "description": "Sample ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -178,7 +234,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.UserResponse"
+                            "$ref": "#/definitions/response.SampleResponse"
                         }
                     },
                     "400": {
@@ -207,66 +263,26 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/users": {
-            "get": {
-                "description": "Get a list of users with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "List users",
-                "parameters": [
-                    {
-                        "minimum": 0,
-                        "type": "integer",
-                        "default": 0,
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "maximum": 100,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "Limit for pagination",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.ListUserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
-        "request.HobbyRequest": {
-            "description": "Hobby information",
+        "request.LoginRequest": {
+            "description": "LoginRequest is a struct that represents the request of login",
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.SampleDetail": {
+            "description": "Sample detail information",
             "type": "object",
             "required": [
+                "id",
                 "name"
             ],
             "properties": {
@@ -278,79 +294,50 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 2
-                }
-            }
-        },
-        "request.LoginRequest": {
-            "description": "LoginRequest is a struct that represents the request of login",
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
                 },
-                "username": {
-                    "type": "string"
+                "price": {
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
-        "request.SpecRequest": {
+        "request.SampleRequest": {
+            "description": "Sample information",
             "type": "object",
             "required": [
-                "id"
+                "int_val",
+                "sample_detail_required",
+                "string_val"
             ],
             "properties": {
-                "id": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "tall": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "weight": {
-                    "type": "integer",
-                    "minimum": 1
-                }
-            }
-        },
-        "request.UserRequest": {
-            "description": "User account information",
-            "type": "object",
-            "required": [
-                "age",
-                "email",
-                "name",
-                "spec"
-            ],
-            "properties": {
-                "age": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "email": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2
-                },
-                "hobby": {
-                    "$ref": "#/definitions/request.HobbyRequest"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2
-                },
-                "roles": {
+                "array_val": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "spec": {
-                    "$ref": "#/definitions/request.SpecRequest"
+                "email": {
+                    "type": "string",
+                    "example": "test@example.com"
+                },
+                "id": {
+                    "description": "refs: https://github.com/swaggo/swag#example-value-of-struct",
+                    "type": "string"
+                },
+                "int_val": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "sample_detail_not_required": {
+                    "$ref": "#/definitions/request.SampleDetail"
+                },
+                "sample_detail_required": {
+                    "$ref": "#/definitions/request.SampleDetail"
+                },
+                "string_val": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2
                 }
             }
         },
@@ -373,8 +360,8 @@ const docTemplate = `{
                 }
             }
         },
-        "response.ListUserResponse": {
-            "description": "User account list information",
+        "response.ListSampleResponse": {
+            "description": "Sample list information",
             "type": "object",
             "properties": {
                 "limit": {
@@ -383,14 +370,14 @@ const docTemplate = `{
                 "offset": {
                     "type": "integer"
                 },
-                "total_count": {
-                    "type": "integer"
-                },
-                "users": {
+                "samples": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/response.UserResponse"
+                        "$ref": "#/definitions/response.SampleResponse"
                     }
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -403,10 +390,16 @@ const docTemplate = `{
                 }
             }
         },
-        "response.UserResponse": {
-            "description": "User account information",
+        "response.SampleResponse": {
+            "description": "Sample information",
             "type": "object",
             "properties": {
+                "array_val": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -416,14 +409,11 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
+                "int_val": {
+                    "type": "integer"
                 },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "string_val": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"

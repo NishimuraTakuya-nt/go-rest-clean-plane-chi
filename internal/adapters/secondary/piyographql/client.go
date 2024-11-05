@@ -9,8 +9,8 @@ import (
 )
 
 type Client interface {
-	GetUser(ctx context.Context, id string) (*models.User, error)
-	ListUser(ctx context.Context, offset, limit *int) ([]models.User, error)
+	GetSample(ctx context.Context, id string) (*models.Sample, error)
+	ListSample(ctx context.Context, offset, limit *int) ([]models.Sample, error)
 }
 
 type client struct {
@@ -24,32 +24,35 @@ func NewClient(log logger.Logger) Client {
 	}
 }
 
-func (c *client) GetUser(_ context.Context, ID string) (*models.User, error) {
-	// ここでは簡易的に固定のユーザーを返していますが、
+func (c *client) GetSample(_ context.Context, ID string) (*models.Sample, error) {
+	// ここでは簡易的に固定値を返していますが、
 	// 実際には取得する処理を実装します
 
-	return &models.User{
+	return &models.Sample{
 		ID:        ID,
-		Name:      "example_user",
-		Roles:     []string{"teamA:editor", "teamB:viewer"},
+		StringVal: "example1",
+		IntVal:    123,
+		ArrayVal:  []string{"aaa", "bbb", "ccc"},
 		Email:     "user@example.com",
 		CreatedAt: time.Now().Add(-24 * time.Hour),
 		UpdatedAt: time.Now(),
 	}, nil
 }
 
-func (c *client) ListUser(ctx context.Context, offset, limit *int) ([]models.User, error) {
-	c.log.InfoContext(ctx, "client ListUser", "offset", offset, "limit", limit)
-	return []models.User{
+func (c *client) ListSample(ctx context.Context, offset, limit *int) ([]models.Sample, error) {
+	c.log.InfoContext(ctx, "client ListSample", "offset", offset, "limit", limit)
+	return []models.Sample{
 		{
-			ID:    "1",
-			Name:  "example_user1",
-			Roles: []string{"teamA:editor", "teamB:viewer"},
+			ID:        "1",
+			StringVal: "example1",
+			IntVal:    123,
+			ArrayVal:  []string{"aaa", "bbb", "ccc"},
 		},
 		{
-			ID:    "2",
-			Name:  "example_user2",
-			Roles: []string{"teamA:viewer", "teamB:editor"},
+			ID:        "2",
+			StringVal: "example2",
+			IntVal:    124,
+			ArrayVal:  []string{"ddd", "eee", "fff"},
 		},
 	}, nil
 }

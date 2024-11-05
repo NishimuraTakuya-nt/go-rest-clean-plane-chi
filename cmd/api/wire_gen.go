@@ -24,21 +24,17 @@ import (
 // Injectors from wire.go:
 
 func InitializeAPI() (http.Handler, error) {
-	tokenService := auth.NewTokenService()
-	authUsecase := usecases.NewAuthUsecase(tokenService)
 	loggerLogger := logger.NewLogger()
 	healthcheckHandler := handlers.NewHealthcheckHandler(loggerLogger)
 	healthcheckRouter := v1.NewHealthcheckRouter(healthcheckHandler)
+	tokenService := auth.NewTokenService()
+	authUsecase := usecases.NewAuthUsecase(tokenService)
+	client := piyographql.NewClient(loggerLogger)
+	sampleUsecase := usecases.NewSampleUsecase(loggerLogger, client)
+	sampleHandler := handlers.NewSampleHandler(loggerLogger, sampleUsecase)
+	sampleRouter := v1.NewSampleRouter(sampleHandler)
 	authHandler := handlers.NewAuthHandler(loggerLogger, authUsecase)
 	authRouter := v1.NewAuthRouter(authHandler)
-	client := piyographql.NewClient(loggerLogger)
-	userUsecase := usecases.NewUserUsecase(loggerLogger, client)
-	userHandler := handlers.NewUserHandler(loggerLogger, userUsecase)
-	userRouter := v1.NewUserRouter(userHandler)
-	productHandler := handlers.NewProductHandler()
-	productRouter := v1.NewProductRouter(productHandler)
-	orderHandler := handlers.NewOrderHandler()
-	orderRouter := v1.NewOrderRouter(orderHandler)
-	handler := routes.NewRouter(authUsecase, healthcheckRouter, authRouter, userRouter, productRouter, orderRouter)
+	handler := routes.NewRouter(healthcheckRouter, authUsecase, sampleRouter, authRouter)
 	return handler, nil
 }

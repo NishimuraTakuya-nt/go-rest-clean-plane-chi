@@ -12,36 +12,36 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestUserUsecase(t *testing.T) {
+func TestSampleUsecase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockClient := mockpiyographql.NewMockClient(ctrl)
-	target := NewUserUsecase(logger.NewLogger(), mockClient)
+	target := NewSampleUsecase(logger.NewLogger(), mockClient)
 
-	t.Run("get user", func(t *testing.T) {
+	t.Run("get sample", func(t *testing.T) {
 		ID := "123"
 		// モックの振る舞いを設定
-		mockClient.EXPECT().GetUser(context.Background(), ID).
-			Return(&models.User{ID: "123", Name: "Test User"}, nil)
+		mockClient.EXPECT().GetSample(context.Background(), ID).
+			Return(&models.Sample{ID: "123", StringVal: "Test Sample"}, nil)
 
 		// テストケースを実行
-		user, err := target.Get(context.Background(), ID)
+		sample, err := target.Get(context.Background(), ID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "123", user.ID)
+		assert.Equal(t, "123", sample.ID)
 	})
 
-	t.Run("get user 2", func(t *testing.T) {
+	t.Run("get sample 2", func(t *testing.T) {
 		ID := "aaa"
 		// モックの振る舞いを設定
-		mockClient.EXPECT().GetUser(context.Background(), ID).
-			Return(&models.User{ID: "aaa", Name: "Test User"}, nil)
+		mockClient.EXPECT().GetSample(context.Background(), ID).
+			Return(&models.Sample{ID: "aaa", StringVal: "Test Sample"}, nil)
 
 		// テストケースを実行
-		user, err := target.Get(context.Background(), ID)
+		sample, err := target.Get(context.Background(), ID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "aaa", user.ID)
+		assert.Equal(t, "aaa", sample.ID)
 	})
 }

@@ -22,18 +22,6 @@ func NewAuthHandler(log logger.Logger, authUsecase usecases.AuthUsecase) *AuthHa
 	}
 }
 
-func (h *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.Method == http.MethodPost && r.URL.Path == "/auth/login":
-		h.Login(w, r)
-	// 将来的に他の認証関連エンドポイントを追加する場合、ここに追加します
-	// 例: case r.Method == http.MethodPost && r.URL.Path == "/auth/logout":
-	//        h.Logout(w, r)
-	default:
-		http.NotFound(w, r)
-	}
-}
-
 // Login godoc
 // @Summary User login
 // @Description Authenticate a user and return a JWT token
@@ -57,7 +45,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: ユーザー認証のロジックを実装する
 	// この例では、単純化のためにユーザー名とパスワードのチェックを省略しています
-	userID := req.Username
+	userID := req.UserID
 	roles := []string{"role:teamA:editor", "role:teamB:viewer"} // 実際のアプリケーションでは、データベースからユーザーのロールを取得する必要があります
 
 	token, err := h.authUsecase.Login(r.Context(), userID, roles)

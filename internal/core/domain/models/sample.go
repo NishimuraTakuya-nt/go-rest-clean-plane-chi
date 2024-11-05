@@ -2,12 +2,11 @@ package models
 
 import "time"
 
-// User model
-// dummy user model
-type User struct {
+type Sample struct {
 	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Roles     []string  `json:"roles"`
+	StringVal string    `json:"string_val"`
+	IntVal    int       `json:"int_val"`
+	ArrayVal  []string  `json:"array_val"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

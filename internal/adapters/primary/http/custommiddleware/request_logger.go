@@ -1,4 +1,4 @@
-package middleware
+package custommiddleware
 
 import (
 	"log/slog"
@@ -8,8 +8,8 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 
-// Logging logs details of each HTTP request
-func Logging() Middleware {
+// RequestLogger logs details of each HTTP request
+func RequestLogger() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -21,17 +21,17 @@ func Logging() Middleware {
 			// ResponseWriter のラッピングを一度だけ行う（後続のMiddlewareではこれを使い回す）
 			rw := NewResponseWriter(w)
 
+			defer func() {
+				log.InfoContext(r.Context(),
+					"Request completed",
+					slog.Int("status", rw.StatusCode),
+					slog.Int64("bytes", rw.Length),
+					slog.String("duration", time.Since(start).String()),
+				)
+			}()
+
 			// 次のハンドラを呼び出し
 			next.ServeHTTP(rw, r)
-
-			// リクエスト終了時のログ
-			duration := time.Since(start)
-			log.InfoContext(r.Context(),
-				"Request completed",
-				slog.Int("status", rw.StatusCode),
-				slog.Int64("bytes", rw.Length),
-				slog.String("duration", duration.String()),
-			)
 		})
 	}
 }

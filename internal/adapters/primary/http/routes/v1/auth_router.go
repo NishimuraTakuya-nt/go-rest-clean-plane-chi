@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers"
+	"github.com/go-chi/chi/v5"
 )
 
 type AuthRouter struct {
-	authHandler *handlers.AuthHandler
+	Handler http.Handler
 }
 
 func NewAuthRouter(authHandler *handlers.AuthHandler) *AuthRouter {
-	return &AuthRouter{authHandler: authHandler}
-}
+	r := chi.NewRouter()
+	r.Post("/login", authHandler.Login)
 
-func (r *AuthRouter) SetupAuthRoutes(mux *http.ServeMux) {
-	mux.Handle("/auth/", r.authHandler)
+	return &AuthRouter{Handler: r}
 }

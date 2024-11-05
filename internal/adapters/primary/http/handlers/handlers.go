@@ -11,18 +11,6 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	err := json.NewEncoder(w).Encode(map[string]string{"message": "Welcome to the API"})
-	if err != nil {
-		logger.NewLogger().Warn("Failed to encode response", "error", err)
-		return
-	}
-}
-
 func writeError(w http.ResponseWriter, err error) {
 	if ew, ok := w.(apperrors.ErrorWriter); ok {
 		ew.WriteError(err)
