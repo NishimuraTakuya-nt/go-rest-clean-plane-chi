@@ -45,8 +45,17 @@ func Validate(s interface{}) *apperrors.ValidationErrors {
 }
 
 // ValidateVar validates a single variable
-func ValidateVar(field interface{}, tag string) error {
-	return GetValidator().Var(field, tag)
+func ValidateVar(field interface{}, tag, namespace string) *apperrors.ValidationErrors {
+	err := GetValidator().Var(field, tag)
+	if err == nil {
+		return nil
+	}
+
+	errors := apperrors.NewValidationErrors()
+	for _, err := range err.(validator.ValidationErrors) {
+		errors.AddError(namespace, err.Value(), getErrorMsg(err))
+	}
+	return errors
 }
 
 // sampleID is a custom validation function for sample IDs

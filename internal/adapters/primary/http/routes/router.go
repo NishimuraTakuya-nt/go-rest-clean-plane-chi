@@ -15,14 +15,14 @@ import (
 
 func NewRouter(
 	healthcheckRouter *v1.HealthcheckRouter,
+	authRouter *v1.AuthRouter,
 	authUsecase usecases.AuthUsecase,
 	sampleRouter *v1.SampleRouter,
-	authRouter *v1.AuthRouter,
 ) http.Handler {
 	r := chi.NewRouter()
 	setupGlobalMiddleware(r)
 	setupSwagger(r)
-	setupAPIRoutes(r, healthcheckRouter, authUsecase, sampleRouter, authRouter)
+	setupAPIRoutes(r, healthcheckRouter, authRouter, authUsecase, sampleRouter)
 	return r
 }
 
@@ -47,6 +47,9 @@ func setupGlobalMiddleware(r *chi.Mux) {
 }
 
 func setupSwagger(r *chi.Mux) {
+	if config.Config.Env == "prd" {
+		return
+	}
 	// Swagger 2.0
 	r.Get("/swagger/2.0/*", httpSwagger.Handler(httpSwagger.URL("/docs/swagger/swagger.json")))
 	// OAS 3.0
@@ -57,9 +60,9 @@ func setupSwagger(r *chi.Mux) {
 func setupAPIRoutes(
 	r *chi.Mux,
 	healthcheckRouter *v1.HealthcheckRouter,
+	authRouter *v1.AuthRouter,
 	authUsecase usecases.AuthUsecase,
 	sampleRouter *v1.SampleRouter,
-	authRouter *v1.AuthRouter,
 ) {
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {

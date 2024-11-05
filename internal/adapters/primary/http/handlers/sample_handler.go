@@ -3,15 +3,16 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/request"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers/queryparameter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/pkg/validator"
+	"github.com/go-chi/chi/v5"
 )
 
 type SampleHandler struct {
@@ -26,43 +27,6 @@ func NewSampleHandler(log logger.Logger, sampleUsecase usecases.SampleUsecase) *
 	}
 }
 
-// Get godoc
-// @Summary Get a sample by ID
-// @Description Get details of a sample
-// @Tags samples
-// @Accept  json
-// @Produce  json
-// @Param id path string true "Sample ID"
-// @Security ApiKeyAuth
-// @Success 200 {object} response.SampleResponse
-// @Failure 400 {object} response.ErrorResponse
-// @Failure 401 {object} response.ErrorResponse
-// @Failure 404 {object} response.ErrorResponse
-// @Failure 500 {object} response.ErrorResponse
-// @Router /samples/{id} [get]
-func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 5 {
-		h.log.WarnContext(ctx, "Invalid sample ID in request")
-		writeError(w, apperrors.NewBadRequestError("Invalid sample ID", nil))
-		return
-	}
-	sampleID := parts[4]
-
-	sample, err := h.sampleUsecase.Get(ctx, sampleID)
-	if err != nil {
-		h.log.ErrorContext(ctx, "Failed to get sample", "error", err)
-		writeError(w, err)
-		return
-	}
-
-	res := response.ToSampleResponse(sample)
-
-	writeJSONResponse(ctx, w, res)
-}
-
 // List godoc
 // @Summary List samples
 // @Description Get a list of samples with pagination
@@ -70,7 +34,7 @@ func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param offset query int false "Offset for pagination" default(0) minimum(0)
-// @Param limit query int false "Limit for pagination" default(10) maximum(100)
+// @Param limit query int false "Limit for pagination" default(100) minimum(1) maximum(100)
 // @Security ApiKeyAuth
 // @Success 200 {object} response.ListSampleResponse
 // @Failure 400 {object} response.ErrorResponse
@@ -79,23 +43,22 @@ func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *SampleHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// クエリパラメータの取得とバリデーション
-	offset, limit, err := getPaginationParams(r)
-	if err != nil {
-		h.log.WarnContext(ctx, "Invalid pagination parameters", "error", err)
-		writeError(w, apperrors.NewBadRequestError(err.Error(), err))
+	p := queryparameter.NewOffsetLimitParams(r)
+	if err := validator.Validate(p); err != nil {
+		h.log.ErrorContext(ctx, "Invalid parameters", "error", err)
+		writeError(w, err)
 		return
 	}
 
 	// サンプルリストの取得
-	samples, err := h.sampleUsecase.List(ctx, offset, limit)
+	samples, err := h.sampleUsecase.List(ctx, p.Offset, p.Limit)
 	if err != nil {
 		h.log.ErrorContext(ctx, "Failed to get sample list", "error", err)
 		writeError(w, err)
 		return
 	}
 
-	res := response.ToListSampleResponse(samples, *offset, *limit)
+	res := response.ToListSampleResponse(samples, p.Offset, p.Limit)
 
 	writeJSONResponse(ctx, w, res)
 }
@@ -120,7 +83,7 @@ func (h *SampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req request.SampleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.ErrorContext(ctx, "Failed to decode sample request", "error", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		writeError(w, apperrors.NewBadRequestError("Invalid request body", err))
 		return
 	}
 
@@ -138,6 +101,47 @@ func (h *SampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+
+	writeJSONResponse(ctx, w, res)
+}
+
+// Get godoc
+// @Summary Get a sample by ID
+// @Description Get details of a sample
+// @Tags samples
+// @Accept  json
+// @Produce  json
+// @Param id path string true "Sample ID"
+// @Security ApiKeyAuth
+// @Success 200 {object} response.SampleResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /samples/{id} [get]
+func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ID := chi.URLParam(r, "id")
+	if ID == "" {
+		h.log.ErrorContext(ctx, "ID is required")
+		writeError(w, apperrors.NewBadRequestError("ID is required", nil))
+		return
+	}
+	if err := validator.ValidateVar(ID, "sampleId", "path parameter"); err != nil {
+		h.log.WarnContext(ctx, "Invalid sample ID format", "id", ID)
+		writeError(w, err)
+		return
+	}
+
+	sample, err := h.sampleUsecase.Get(ctx, ID)
+	if err != nil {
+		h.log.ErrorContext(ctx, "Failed to get sample", "error", err)
+		writeError(w, err)
+		return
+	}
+
+	res := response.ToSampleResponse(sample)
 
 	writeJSONResponse(ctx, w, res)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/request"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
@@ -39,7 +40,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req request.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.log.ErrorContext(ctx, "Failed to decode login request", "error", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		writeError(w, apperrors.NewBadRequestError("Invalid request body", err))
 		return
 	}
 
@@ -51,7 +52,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.authUsecase.Login(r.Context(), userID, roles)
 	if err != nil {
 		h.log.ErrorContext(ctx, "Failed to generate token", "error", err)
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		writeError(w, apperrors.NewInternalError("Failed to generate token", err))
 		return
 	}
 

@@ -29,12 +29,12 @@ func InitializeAPI() (http.Handler, error) {
 	healthcheckRouter := v1.NewHealthcheckRouter(healthcheckHandler)
 	tokenService := auth.NewTokenService()
 	authUsecase := usecases.NewAuthUsecase(tokenService)
+	authHandler := handlers.NewAuthHandler(loggerLogger, authUsecase)
+	authRouter := v1.NewAuthRouter(authHandler)
 	client := piyographql.NewClient(loggerLogger)
 	sampleUsecase := usecases.NewSampleUsecase(loggerLogger, client)
 	sampleHandler := handlers.NewSampleHandler(loggerLogger, sampleUsecase)
 	sampleRouter := v1.NewSampleRouter(sampleHandler)
-	authHandler := handlers.NewAuthHandler(loggerLogger, authUsecase)
-	authRouter := v1.NewAuthRouter(authHandler)
-	handler := routes.NewRouter(healthcheckRouter, authUsecase, sampleRouter, authRouter)
+	handler := routes.NewRouter(healthcheckRouter, authRouter, authUsecase, sampleRouter)
 	return handler, nil
 }

@@ -18,7 +18,7 @@ func NewSampleRouter(sampleHandler *handlers.SampleHandler) *SampleRouter {
 	r.Post("/", sampleHandler.Create)
 
 	// ID指定の操作をグループ化
-	r.Route("/{sampleID}", func(r chi.Router) {
+	r.Route("/{id}", func(r chi.Router) {
 		r.Get("/", sampleHandler.Get)
 		r.Put("/", sampleHandler.Update)
 		r.Delete("/", sampleHandler.Delete)

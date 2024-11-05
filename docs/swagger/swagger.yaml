@@ -169,14 +169,12 @@ paths:
       - application/json
       description: Get a list of samples with pagination
       parameters:
-      - default: 0
-        description: Offset for pagination
+      - description: Offset for pagination
         in: query
         minimum: 0
         name: offset
         type: integer
-      - default: 10
-        description: Limit for pagination
+      - description: Limit for pagination
         in: query
         maximum: 100
         name: limit

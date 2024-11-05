@@ -36,20 +36,20 @@ func ToSampleResponse(s *models.Sample) SampleResponse {
 type ListSampleResponse struct {
 	Samples    []SampleResponse `json:"samples"`
 	TotalCount int              `json:"total_count"`
-	Offset     int              `json:"offset"`
-	Limit      int              `json:"limit"`
+	Offset     *int             `json:"offset"`
+	Limit      *int             `json:"limit"`
 }
 
 // ToListSampleResponse は複数のサンプルモデルを変換します
-func ToListSampleResponse(models []models.Sample, offset, limit int) *ListSampleResponse {
-	sampels := make([]SampleResponse, len(models))
+func ToListSampleResponse(models []models.Sample, offset, limit *int) *ListSampleResponse {
+	samples := make([]SampleResponse, len(models))
 	for i, model := range models {
-		sampels[i] = ToSampleResponse(&model)
+		samples[i] = ToSampleResponse(&model)
 	}
 
 	return &ListSampleResponse{
-		Samples:    sampels,
-		TotalCount: len(sampels),
+		Samples:    samples,
+		TotalCount: len(samples),
 		Offset:     offset,
 		Limit:      limit,
 	}
