@@ -8,6 +8,8 @@ base project for go rest api with chi
 - gomock
 - go-playground validator
 - chi
+- go.opentelemetry.io
+- 
 
 ## 実装内容
 - 標準ライブラリでのルーディング
@@ -34,6 +36,8 @@ base project for go rest api with chi
 - swagger の使い方
 - mock generator の使い方
 - wire の使い方
+- datadog container の使い方
+
 
 ## このプロジェクトは以下のディレクトリ構造に基づいています：
 ```
@@ -65,4 +69,26 @@ base project for go rest api with chi
 │     └── utils
 ├── pkg
 └── scripts
+```
+
+### direnv
+1. direnv をインストール
+```bash
+brew install direnv
+```
+- シェルの設定を追加（~/.zshrc や ~/.bashrc）
+```
+eval "$(direnv hook zsh)" 
+```
+
+2. 環境変数テンプレートをコピー
+```bash
+cp .envrc.example .envrc
+```
+
+3. `.envrc` を編集
+
+4. direnv の許可
+```bash
+direnv allow
 ```

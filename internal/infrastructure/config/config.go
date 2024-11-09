@@ -17,8 +17,7 @@ type appConfig struct {
 	AllowedOrigins []string      `mapstructure:"allowed_origins" validate:"required"`
 	JWTSecretKey   string        `mapstructure:"jwt_secret_key" validate:"required"`
 	RequestTimeout time.Duration `mapstructure:"request_timeout" validate:"required"`
-	// OpenTelemetry
-	ServiceName string `mapstructure:"service_name" validate:"required"`
+	// DataDog Agent
 	DDAgentHost string `mapstructure:"dd_agent_host" validate:"required"`
 	DDAgentPort string `mapstructure:"dd_agent_port" validate:"required"`
 }
@@ -33,12 +32,11 @@ func init() {
 	v.SetDefault("request_timeout", 180*time.Second)
 	//v.SetDefault("request_timeout", 1*time.Second) // fixme
 
-	// OpenTelemetry
-	v.SetDefault("service_name", "go-rest-clean-plane-chi")
+	// DataDog Agent
 	v.SetDefault("dd_agent_host", "localhost")
-	v.SetDefault("dd_agent_port", "8126")
+	v.SetDefault("dd_agent_port", "4317")
 
-	viper.AutomaticEnv()
+	v.AutomaticEnv()
 	if err := v.Unmarshal(&Config); err != nil {
 		panic(err)
 	}

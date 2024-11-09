@@ -7,40 +7,46 @@ import (
 	"time"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func Telemetry() Middleware {
+func OTELTracer() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			tracer := otel.Tracer("http-server")
-			ctx, span := tracer.Start(ctx, fmt.Sprintf("%s %s", r.Method, r.URL.Path))
+			resourceName := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+			opts := []trace.SpanStartOption{
+				trace.WithAttributes(
+					// Datadogの属性としてリソース名を設定
+					attribute.String("resource.name", resourceName),
+				),
+			}
+			ctx, span := tracer.Start(ctx, resourceName, opts...)
 			defer span.End()
 
 			start := time.Now()
 			log := logger.NewLogger()
 			requestID := middleware.GetReqID(ctx)
 
-			routeCtx := chi.RouteContext(ctx)
-			routePattern := ""
-			if routeCtx != nil {
-				routePattern = fmt.Sprintf("%s %s", routeCtx.RouteMethod, routeCtx.RoutePattern())
-			}
+			//routeCtx := chi.RouteContext(ctx) // fixme RoutePatternが取れないので暇な時に考える
+			//routePattern := ""
+			//if routeCtx != nil {
+			//	routePattern = fmt.Sprintf("%s %s", routeCtx.RouteMethod, routeCtx.RoutePattern())
+			//}
 
 			// リクエスト開始時のログ
-			log.InfoContext(r.Context(), "Request started")
+			log.InfoContext(ctx, "Request started")
 
 			// 基本的なリクエスト情報の記録
 			span.SetAttributes(
 				attribute.String("http.method", r.Method),
 				attribute.String("http.url", r.URL.String()),
 				attribute.String("http.user_agent", r.UserAgent()),
-				attribute.String("http.route_pattern", routePattern),
 				attribute.String("http.request_id", requestID),
 			)
 
@@ -69,7 +75,7 @@ func Telemetry() Middleware {
 				span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", rw.StatusCode))
 			}
 
-			log.InfoContext(r.Context(),
+			log.InfoContext(ctx,
 				"Request completed",
 				slog.Int("status", rw.StatusCode),
 				slog.Int64("bytes", rw.Length),

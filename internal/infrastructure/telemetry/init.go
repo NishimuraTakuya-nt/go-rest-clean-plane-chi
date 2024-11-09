@@ -24,7 +24,7 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	// リソース情報の設定
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceName(cfg.ServiceName),
+			semconv.ServiceName("go-rest-clean-plane-chi"),
 			semconv.ServiceVersion(cfg.Version),
 			semconv.DeploymentEnvironment(cfg.Env),
 			semconv.HostName(getHostName()),
@@ -42,12 +42,12 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithInsecure(),
-		// タイムアウトの設定
 		otlptracegrpc.WithTimeout(5*time.Second),
 	)
 
 	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
+		log.Error("Failed to create exporter", "error", err.Error())
 		return nil, fmt.Errorf("failed to create exporter: %w", err)
 	}
 
@@ -56,14 +56,14 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 		sdktrace.WithBatcher(exporter,
 			sdktrace.WithBatchTimeout(5*time.Second),
 			sdktrace.WithMaxExportBatchSize(512),
-			// エラー時の再試行設定
 			sdktrace.WithMaxQueueSize(2048),
 		),
 		sdktrace.WithResource(res),
-		// サンプリング設定の詳細化
-		sdktrace.WithSampler(sdktrace.ParentBased(
-			sdktrace.TraceIDRatioBased(0.1), // 10%のサンプリング
-		)),
+		// サンプリング設定の詳細化 // fixme 一旦１100%にしてDatadogで確認しやすくしおく
+		//sdktrace.WithSampler(sdktrace.ParentBased(
+		//	sdktrace.TraceIDRatioBased(1.0), // 10%のサンプリング
+		//)),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 
 	// グローバルトレーサープロバイダーの設定
@@ -79,6 +79,7 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 			log.Error("Error shutting down tracer provider", "error", err.Error())
 			return fmt.Errorf("failed to shutdown tracer provider: %w", err)
 		}
+
 		log.Info("Telemetry provider shut down successfully")
 		return nil
 	}, nil

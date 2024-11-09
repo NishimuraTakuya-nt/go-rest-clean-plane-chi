@@ -34,10 +34,20 @@ func main() {
 
 func run() error {
 	log := logger.NewLogger()
-	if err := config.Config.Validate(); err != nil {
+	cfg := config.Config
+	if err := cfg.Validate(); err != nil {
 		log.Error("config validation failed", slog.String("error", err.Error()))
 		panic(err)
 	}
+
+	////// Datadogトレーサー（SDK）の初期化 // fixme choose one tracer
+	//tracer.Start(
+	//	tracer.WithService(cfg.ServiceName),
+	//	tracer.WithEnv(cfg.Env),
+	//	tracer.WithServiceVersion(cfg.Version),
+	//	tracer.WithAgentAddr(fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)),
+	//)
+	//defer tracer.Stop()
 
 	// telemetryの初期化
 	shutdownTelemetry, err := telemetry.InitTelemetry(context.Background())
@@ -51,7 +61,7 @@ func run() error {
 	}
 
 	srv := &http.Server{
-		Addr:    config.Config.ServerAddress,
+		Addr:    cfg.ServerAddress,
 		Handler: router,
 	}
 
@@ -61,7 +71,7 @@ func run() error {
 
 	// サーバーをゴルーチンで起動
 	go func() {
-		log.Info("Server started", slog.String("address", config.Config.ServerAddress))
+		log.Info("Server started", slog.String("address", cfg.ServerAddress))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("Server listen failed", slog.String("error", err.Error()))
 		}

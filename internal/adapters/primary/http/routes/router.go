@@ -31,7 +31,8 @@ func setupGlobalMiddleware(r *chi.Mux) {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(custommiddleware.Context())
-	r.Use(custommiddleware.Telemetry())
+	r.Use(custommiddleware.OTELTracer())
+	//r.Use(custommiddleware.DDTracer()) // fixme choose one of OTELTracer or DDTracer
 	// セキュリティ関連
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   config.Config.AllowedOrigins,
@@ -77,7 +78,7 @@ func setupAPIRoutes(
 
 			r.Group(func(r chi.Router) {
 				// 認証必要のプライベートルート
-				r.Use(custommiddleware.Authenticate(authUsecase))
+				//r.Use(custommiddleware.Authenticate(authUsecase))
 				r.Mount("/samples", sampleRouter.Handler)
 			})
 		})
