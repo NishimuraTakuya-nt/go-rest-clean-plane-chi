@@ -14,16 +14,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func ErrorHandler() func(http.Handler) http.Handler {
+func ErrorHandler() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log := logger.NewLogger()
-
-			rw, ok := w.(*ResponseWriter)
-			if !ok {
-				log.Warn("ResponseWriter is not of type *ResponseWriter")
-				return
-			}
+			rw := GetWrapResponseWriter(w)
 
 			defer func() {
 				if re := recover(); re != nil {
@@ -64,7 +59,7 @@ func ErrorHandler() func(http.Handler) http.Handler {
 	}
 }
 
-func handleError(ctx context.Context, rw *ResponseWriter, err error) {
+func handleError(ctx context.Context, rw *WrapResponseWriter, err error) {
 	var res response.ErrorResponse
 	var statusCode int
 	requestID := middleware.GetReqID(ctx)

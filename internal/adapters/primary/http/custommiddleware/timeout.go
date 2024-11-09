@@ -15,12 +15,7 @@ func Timeout(duration time.Duration) Middleware {
 			ctx, cancel := context.WithTimeout(r.Context(), duration)
 			defer cancel()
 			log := logger.NewLogger()
-
-			rw, ok := w.(*ResponseWriter)
-			if !ok {
-				log.WarnContext(ctx, "ResponseWriter is not of type *ResponseWriter")
-				return
-			}
+			rw := GetWrapResponseWriter(w)
 
 			done := make(chan bool)
 			go func() {

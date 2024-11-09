@@ -23,12 +23,7 @@ func Authenticate(authUsecase usecases.AuthUsecase) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log := logger.NewLogger()
-
-			rw, ok := w.(*ResponseWriter)
-			if !ok {
-				log.Warn("ResponseWriter is not of type *ResponseWriter")
-				return
-			}
+			rw := GetWrapResponseWriter(w)
 
 			// 除外パスのチェック
 			for _, path := range excludedPaths {

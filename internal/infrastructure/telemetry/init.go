@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-	"google.golang.org/grpc"
 )
 
 func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
@@ -30,7 +29,6 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 			semconv.DeploymentEnvironment(cfg.Env),
 			semconv.HostName(getHostName()),
 		),
-		// 自動検出リソースの追加
 		resource.WithFromEnv(),
 		resource.WithProcess(),
 		resource.WithContainer(),
@@ -44,7 +42,6 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 		// タイムアウトの設定
 		otlptracegrpc.WithTimeout(5*time.Second),
 	)
@@ -60,7 +57,6 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 			sdktrace.WithBatchTimeout(5*time.Second),
 			sdktrace.WithMaxExportBatchSize(512),
 			// エラー時の再試行設定
-			sdktrace.WithMaxExportBatchSize(256),
 			sdktrace.WithMaxQueueSize(2048),
 		),
 		sdktrace.WithResource(res),
@@ -77,7 +73,6 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 		propagation.Baggage{},
 	))
 
-	// クリーンアップ関数の返却
 	return func(ctx context.Context) error {
 		log.Info("Shutting down telemetry provider")
 		if err := tp.Shutdown(ctx); err != nil {

@@ -30,6 +30,9 @@ func setupGlobalMiddleware(r *chi.Mux) {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(custommiddleware.Context())
+	r.Use(custommiddleware.Telemetry())
+	// セキュリティ関連
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   config.Config.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -40,8 +43,7 @@ func setupGlobalMiddleware(r *chi.Mux) {
 	}))
 	r.Use(middleware.SetHeader("X-Content-Type-Options", "nosniff"))
 	r.Use(middleware.SetHeader("X-Frame-Options", "DENY"))
-	r.Use(custommiddleware.Context())
-	r.Use(custommiddleware.RequestLogger())
+	// APP独自
 	r.Use(custommiddleware.ErrorHandler())
 	r.Use(custommiddleware.Timeout(config.Config.RequestTimeout))
 }
