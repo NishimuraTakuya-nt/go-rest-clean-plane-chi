@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	_ "github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/docs/swagger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 )
 
 // @title Go REST Clean API with Chi
@@ -35,6 +37,12 @@ func run() error {
 	if err := config.Config.Validate(); err != nil {
 		log.Error("config validation failed", slog.String("error", err.Error()))
 		panic(err)
+	}
+
+	// telemetryの初期化
+	shutdownTelemetry, err := telemetry.InitTelemetry(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 
 	router, err := InitializeAPI()
@@ -67,9 +75,15 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// サーバーをシャットダウン
+	// 順番にシャットダウン
+	// 1. HTTPサーバー
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Error("Server forced to shutdown", slog.String("error", err.Error()))
+		return err
+	}
+	// 2. Telemetry
+	if err := shutdownTelemetry(shutdownCtx); err != nil {
+		log.Error("Failed to shutdown telemetry", slog.String("error", err.Error()))
 		return err
 	}
 
