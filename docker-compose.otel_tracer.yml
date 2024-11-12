@@ -15,8 +15,6 @@ services:
       - go-modules:/go/pkg/mod
     depends_on:
       - datadog-agent
-    networks:
-      - datadog_network
 
   datadog-agent:
     image: datadog/agent:latest
@@ -34,12 +32,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
-    networks:
-      - datadog_network
-
-networks:
-  datadog_network:
-    driver: bridge
 
 volumes:
   go-modules:

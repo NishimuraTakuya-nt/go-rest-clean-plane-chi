@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func OTELTracer() Middleware {
@@ -20,24 +20,12 @@ func OTELTracer() Middleware {
 			ctx := r.Context()
 			tracer := otel.Tracer("http-server")
 			resourceName := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-			opts := []trace.SpanStartOption{
-				trace.WithAttributes(
-					// Datadogの属性としてリソース名を設定
-					attribute.String("resource.name", resourceName),
-				),
-			}
-			ctx, span := tracer.Start(ctx, resourceName, opts...)
+			ctx, span := tracer.Start(ctx, resourceName)
 			defer span.End()
 
 			start := time.Now()
 			log := logger.NewLogger()
 			requestID := middleware.GetReqID(ctx)
-
-			//routeCtx := chi.RouteContext(ctx) // fixme RoutePatternが取れないので暇な時に考える
-			//routePattern := ""
-			//if routeCtx != nil {
-			//	routePattern = fmt.Sprintf("%s %s", routeCtx.RouteMethod, routeCtx.RoutePattern())
-			//}
 
 			// リクエスト開始時のログ
 			log.InfoContext(ctx, "Request started")
@@ -55,6 +43,14 @@ func OTELTracer() Middleware {
 
 			// 次のハンドラーの実行
 			next.ServeHTTP(rw, r.WithContext(ctx))
+
+			// ルーティングの解決後にルートパターンを取得してspan名を更新
+			rctx := chi.RouteContext(ctx)
+			if rctx != nil && rctx.RoutePattern() != "" {
+				normalizedPattern := fmt.Sprintf("%s %s", r.Method, rctx.RoutePattern())
+				span.SetName(normalizedPattern)
+				span.SetAttributes(attribute.String("resource.name", normalizedPattern))
+			}
 
 			// 処理時間の計算
 			duration := time.Since(start)

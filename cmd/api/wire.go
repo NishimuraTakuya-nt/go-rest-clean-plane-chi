@@ -13,10 +13,11 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 	"github.com/google/wire"
 )
 
-func InitializeAPI() (http.Handler, error) {
+func InitializeAPI() (http.Handler, func(), error) {
 	wire.Build(
 		logger.Set,
 		piyographql.Set,
@@ -24,7 +25,8 @@ func InitializeAPI() (http.Handler, error) {
 		usecases.Set,
 		handlers.Set,
 		v1.Set,
+		telemetry.Set,
 		routes.Set,
 	)
-	return nil, nil
+	return nil, nil, nil
 }

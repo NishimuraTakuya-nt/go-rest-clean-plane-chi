@@ -7,6 +7,7 @@ import (
 	v1 "github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -18,21 +19,23 @@ func NewRouter(
 	authRouter *v1.AuthRouter,
 	authUsecase usecases.AuthUsecase,
 	sampleRouter *v1.SampleRouter,
-) http.Handler {
+	telemetryProvider *telemetry.TelemetryProvider,
+) (http.Handler, func()) {
 	r := chi.NewRouter()
-	setupGlobalMiddleware(r)
+	setupGlobalMiddleware(r, telemetryProvider.Metrics)
 	setupSwagger(r)
 	setupAPIRoutes(r, healthcheckRouter, authRouter, authUsecase, sampleRouter)
-	return r
+	return r, telemetryProvider.Cleanup
 }
 
-func setupGlobalMiddleware(r *chi.Mux) {
+func setupGlobalMiddleware(r *chi.Mux, appMetrics *telemetry.AppMetrics) {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(custommiddleware.Context())
 	r.Use(custommiddleware.OTELTracer())
 	//r.Use(custommiddleware.DDTracer()) // fixme choose one of OTELTracer or DDTracer
+	r.Use(custommiddleware.Metrics(appMetrics))
 	// セキュリティ関連
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   config.Config.AllowedOrigins,

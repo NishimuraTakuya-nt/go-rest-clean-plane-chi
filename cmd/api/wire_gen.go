@@ -14,6 +14,7 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 	"net/http"
 )
 
@@ -23,7 +24,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeAPI() (http.Handler, error) {
+func InitializeAPI() (http.Handler, func(), error) {
 	loggerLogger := logger.NewLogger()
 	healthcheckHandler := handlers.NewHealthcheckHandler(loggerLogger)
 	healthcheckRouter := v1.NewHealthcheckRouter(healthcheckHandler)
@@ -35,6 +36,12 @@ func InitializeAPI() (http.Handler, error) {
 	sampleUsecase := usecases.NewSampleUsecase(loggerLogger, client)
 	sampleHandler := handlers.NewSampleHandler(loggerLogger, sampleUsecase)
 	sampleRouter := v1.NewSampleRouter(sampleHandler)
-	handler := routes.NewRouter(healthcheckRouter, authRouter, authUsecase, sampleRouter)
-	return handler, nil
+	telemetryProvider, err := telemetry.InitTelemetry()
+	if err != nil {
+		return nil, nil, err
+	}
+	handler, cleanup := routes.NewRouter(healthcheckRouter, authRouter, authUsecase, sampleRouter, telemetryProvider)
+	return handler, func() {
+		cleanup()
+	}, nil
 }

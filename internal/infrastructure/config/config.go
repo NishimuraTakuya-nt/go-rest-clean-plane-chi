@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Config appConfig
+var Config AppConfig
 
-type appConfig struct {
+type AppConfig struct {
 	Env            string        `mapstructure:"env" validate:"required"`
 	LogLevel       string        `mapstructure:"log_level"`
 	Version        string        `mapstructure:"version"` // fixme increment version
@@ -43,6 +43,6 @@ func init() {
 }
 
 // Validate validates the config values.
-func (c *appConfig) Validate() error {
+func (c *AppConfig) Validate() error {
 	return validator.New().Struct(c)
 }

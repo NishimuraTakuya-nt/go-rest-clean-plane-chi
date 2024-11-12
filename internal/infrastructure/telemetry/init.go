@@ -9,17 +9,26 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
-func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
+type TelemetryProvider struct {
+	Metrics *AppMetrics
+	Cleanup func()
+}
+
+// InitTelemetry テレメトリーの初期化とTelemetryProviderの作成
+func InitTelemetry() (*TelemetryProvider, error) {
 	log := logger.NewLogger()
 	cfg := config.Config
+	ctx := context.Background()
 
 	// リソース情報の設定
 	res, err := resource.New(ctx,
@@ -37,7 +46,43 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// エクスポーターの設定
+	// トレーサーの初期化
+	tp, err := initTracer(ctx, res, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize tracer: %w", err)
+	}
+
+	// メトリクスの初期化
+	mp, metrics, err := initMetrics(ctx, res, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize metrics: %w", err)
+	}
+
+	// クリーンアップ関数
+	cleanup := func() {
+		log.Info("Shutting down telemetry provider & meter provider")
+		ctx := context.Background()
+		if err := tp.Shutdown(ctx); err != nil {
+			log.Error("Error shutting down tracer provider", "error", err.Error())
+			return
+		}
+		if err := mp.Shutdown(ctx); err != nil {
+			log.Error("Error shutting down meter provider", "error", err.Error())
+			return
+		}
+		log.Info("Telemetry provider & meter provider shut down successfully")
+	}
+
+	provider := &TelemetryProvider{
+		Metrics: metrics,
+		Cleanup: cleanup,
+	}
+
+	return provider, nil
+}
+
+// initTracer トレーサーの初期化
+func initTracer(ctx context.Context, res *resource.Resource, cfg config.AppConfig) (*sdktrace.TracerProvider, error) {
 	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithEndpoint(endpoint),
@@ -47,11 +92,9 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 
 	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
-		log.Error("Failed to create exporter", "error", err.Error())
-		return nil, fmt.Errorf("failed to create exporter: %w", err)
+		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
 
-	// トレーサープロバイダーの設定
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter,
 			sdktrace.WithBatchTimeout(5*time.Second),
@@ -73,16 +116,33 @@ func InitTelemetry(ctx context.Context) (func(context.Context) error, error) {
 		propagation.Baggage{},
 	))
 
-	return func(ctx context.Context) error {
-		log.Info("Shutting down telemetry provider")
-		if err := tp.Shutdown(ctx); err != nil {
-			log.Error("Error shutting down tracer provider", "error", err.Error())
-			return fmt.Errorf("failed to shutdown tracer provider: %w", err)
-		}
+	return tp, nil
+}
 
-		log.Info("Telemetry provider shut down successfully")
-		return nil
-	}, nil
+// initMetrics メトリクスの初期化
+func initMetrics(ctx context.Context, res *resource.Resource, cfg config.AppConfig) (*sdkmetric.MeterProvider, *AppMetrics, error) {
+	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)
+	exporter, err := otlpmetricgrpc.New(ctx,
+		otlpmetricgrpc.WithEndpoint(endpoint),
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithTimeout(5*time.Second),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create metric exporter: %w", err)
+	}
+
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(
+			sdkmetric.NewPeriodicReader(exporter,
+				sdkmetric.WithInterval(30*time.Second),
+			),
+		),
+	)
+	otel.SetMeterProvider(meterProvider)
+	meter := meterProvider.Meter("app-metrics")
+	metrics, err := newAppMetrics(meter)
+	return meterProvider, metrics, err
 }
 
 func getHostName() string {

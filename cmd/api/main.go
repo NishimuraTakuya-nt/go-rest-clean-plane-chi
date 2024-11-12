@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,7 +13,6 @@ import (
 	_ "github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/docs/swagger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 )
 
 // @title Go REST Clean API with Chi
@@ -49,13 +47,7 @@ func run() error {
 	//)
 	//defer tracer.Stop()
 
-	// telemetryの初期化
-	shutdownTelemetry, err := telemetry.InitTelemetry(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to initialize telemetry: %w", err)
-	}
-
-	router, err := InitializeAPI()
+	router, telemetryCleanup, err := InitializeAPI()
 	if err != nil {
 		return err
 	}
@@ -92,10 +84,7 @@ func run() error {
 		return err
 	}
 	// 2. Telemetry
-	if err := shutdownTelemetry(shutdownCtx); err != nil {
-		log.Error("Failed to shutdown telemetry", slog.String("error", err.Error()))
-		return err
-	}
+	telemetryCleanup()
 
 	// その他のリソースのクリーンアップ
 	//if err := graphQLClient.Close(); err != nil {
