@@ -14,12 +14,15 @@ import (
 
 type Router struct {
 	cfg *config.AppConfig
+	// middleware
 	//OTELTracer *custommiddleware.OTELTracer
-	//Metrics    *custommiddleware.Metrics
-
-	errorHandler      *custommiddleware.ErrorHandling
-	timeout           *custommiddleware.Timeout
-	authentication    *custommiddleware.Authentication
+	//OTELMetrics    *custommiddleware.OTELMetrics
+	DDTracer       *custommiddleware.DDTracer
+	DDMetrics      *custommiddleware.DDMetrics
+	errorHandler   *custommiddleware.ErrorHandling
+	timeout        *custommiddleware.Timeout
+	authentication *custommiddleware.Authentication
+	// router
 	healthcheckRouter *v1.HealthcheckRouter
 	authRouter        *v1.AuthRouter
 	sampleRouter      *v1.SampleRouter
@@ -28,7 +31,9 @@ type Router struct {
 func NewRouter(
 	cfg *config.AppConfig,
 	//OTELTracer *custommiddleware.OTELTracer,
-	//Metrics *custommiddleware.Metrics,
+	//OTELMetrics *custommiddleware.OTELMetrics,
+	DDTracer *custommiddleware.DDTracer,
+	DDMetrics *custommiddleware.DDMetrics,
 
 	errorHandler *custommiddleware.ErrorHandling,
 	Timeout *custommiddleware.Timeout,
@@ -40,7 +45,9 @@ func NewRouter(
 	return &Router{
 		cfg: cfg,
 		//OTELTracer: OTELTracer,
-		//Metrics:    Metrics,
+		//OTELMetrics:    OTELMetrics,
+		DDTracer:  DDTracer,
+		DDMetrics: DDMetrics,
 
 		errorHandler:      errorHandler,
 		timeout:           Timeout,
@@ -65,8 +72,9 @@ func (ro *Router) setupGlobalMiddleware(r *chi.Mux) { // case: datadog SDK
 	r.Use(middleware.Recoverer)
 	r.Use(custommiddleware.Context())
 	//r.Use(custommiddleware.OTELTracer()) // fixme choose one of OTELTracer or DDTracer
-	//r.Use(custommiddleware.Metrics(appMetrics)) // case: open telemetry
-	//r.Use(custommiddleware.DDTracer()) // fixme choose one of OTELTracer or DDTracer
+	//r.Use(custommiddleware.OTELMetrics(appMetrics)) // case: open telemetry
+	r.Use(ro.DDTracer.Handle())
+	r.Use(ro.DDMetrics.Handle())
 
 	// セキュリティ関連
 	r.Use(cors.Handler(cors.Options{

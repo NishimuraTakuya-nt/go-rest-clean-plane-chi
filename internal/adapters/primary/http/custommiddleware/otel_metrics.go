@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/opentelemetry"
 )
 
-type Metrics struct {
-	metrics *telemetry.AppMetrics
+type OTELMetrics struct {
+	metrics *opentelemetry.AppMetrics
 }
 
-func NewMetrics(metrics *telemetry.AppMetrics) *Metrics {
-	return &Metrics{metrics: metrics}
+func NewOTELMetrics(metrics *opentelemetry.AppMetrics) *OTELMetrics {
+	return &OTELMetrics{metrics: metrics}
 }
 
-func (h Metrics) Handle() Middleware {
+func (h OTELMetrics) Handle() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()

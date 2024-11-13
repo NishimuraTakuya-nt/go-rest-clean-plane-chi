@@ -39,7 +39,15 @@ func run() error {
 	}
 	logger := logger.NewLogger(cfg)
 
-	////// Datadogトレーサー（SDK）の初期化 // fixme choose one tracer
+	// metrics
+	metricsManager, err := datadog.NewMetricsManager(cfg, logger)
+	if err != nil {
+		logger.Error("Failed to initialize metrics manager", "error", err)
+		return fmt.Errorf("failed to initialize metrics manager: %w", err)
+	}
+	metricsManager.Start()
+	defer metricsManager.Stop()
+	// tracer
 	ddTracer := datadog.NewTracer(cfg, logger)
 	if err := ddTracer.Start(); err != nil {
 		logger.Error("Failed to initialize Datadog tracer", "error", err)
@@ -47,7 +55,7 @@ func run() error {
 	}
 	defer ddTracer.Stop()
 
-	router, err := InitializeRouter(cfg, logger)
+	router, err := InitializeRouter(cfg, logger, metricsManager)
 	if err != nil {
 		return err
 	}

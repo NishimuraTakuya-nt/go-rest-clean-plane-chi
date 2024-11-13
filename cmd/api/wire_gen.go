@@ -17,6 +17,7 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
 )
 
 import (
@@ -25,7 +26,9 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeRouter(cfg *config.AppConfig, logger2 logger.Logger) (*routes.Router, error) {
+func InitializeRouter(cfg *config.AppConfig, logger2 logger.Logger, metricsManager *datadog.MetricsManager) (*routes.Router, error) {
+	ddTracer := custommiddleware.NewDDTracer(logger2)
+	ddMetrics := custommiddleware.NewMetrics(logger2, metricsManager)
 	jsonWriter := presenter.NewJSONWriter(logger2)
 	errorHandling := custommiddleware.NewErrorHandling(logger2, jsonWriter)
 	timeout := custommiddleware.NewTimeout(logger2, cfg)
@@ -40,6 +43,6 @@ func InitializeRouter(cfg *config.AppConfig, logger2 logger.Logger) (*routes.Rou
 	sampleUsecase := usecases.NewSampleUsecase(logger2, client)
 	sampleHandler := handlers.NewSampleHandler(logger2, jsonWriter, sampleUsecase)
 	sampleRouter := v1.NewSampleRouter(sampleHandler)
-	router := routes.NewRouter(cfg, errorHandling, timeout, authentication, healthcheckRouter, authRouter, sampleRouter)
+	router := routes.NewRouter(cfg, ddTracer, ddMetrics, errorHandling, timeout, authentication, healthcheckRouter, authRouter, sampleRouter)
 	return router, nil
 }

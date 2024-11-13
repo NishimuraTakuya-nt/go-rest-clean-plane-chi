@@ -14,10 +14,11 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
 	"github.com/google/wire"
 )
 
-func InitializeRouter(cfg *config.AppConfig, logger logger.Logger) (*routes.Router, error) {
+func InitializeRouter(cfg *config.AppConfig, logger logger.Logger, metricsManager *datadog.MetricsManager) (*routes.Router, error) {
 	wire.Build(
 		presenter.Set,
 		custommiddleware.Set,

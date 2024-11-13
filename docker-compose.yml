@@ -11,6 +11,8 @@ services:
       - JWT_SECRET_KEY=hoge
       - DD_AGENT_HOST=datadog-agent
       - DD_AGENT_PORT=4317
+      - DD_DOGSTATSD_HOST=datadog-agent    # DogStatsD接続先
+      - DD_DOGSTATSD_PORT=8125             # DogStatsD接続ポート
     volumes:
       - go-modules:/go/pkg/mod
     depends_on:
@@ -29,13 +31,15 @@ services:
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_CONTAINER_EXCLUDE="name:datadog-agent"
-      - DD_APM_MAX_EPS=200  # Event Per Second制限
-      - DD_APM_MAX_TPS=200  # Traces Per Second制限
-      - DD_LOG_LEVEL=debug  # debug, info, warn, error
+      # メトリクス関連の設定を追加
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true  # 他のコンテナからのメトリクス受信を許可
+      - DD_DOGSTATSD_ORIGIN_DETECTION=true   # コンテナタグの自動検出
+      - DD_HOSTNAME=local-docker-host           # ホスト名の設定
+      - DD_DOGSTATSD_TAG_CARDINALITY=high    # タグの詳細度設定
+      # デバッグ設定
+      - DD_LOG_LEVEL=debug
       - DD_APM_DEBUG=true
-#      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENABLED=true
-#      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
-#      - DD_OTLP_CONFIG_DEBUG=true
+      - DD_DOGSTATSD_DEBUG=true             # DogStatsDのデバッグログを有効化
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc/:/host/proc/:ro
