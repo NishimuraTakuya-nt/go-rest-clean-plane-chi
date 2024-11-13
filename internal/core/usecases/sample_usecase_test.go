@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/stretchr/testify/assert"
 
@@ -17,7 +18,7 @@ func TestSampleUsecase(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mockpiyographql.NewMockClient(ctrl)
-	target := NewSampleUsecase(logger.NewLogger(), mockClient)
+	target := NewSampleUsecase(logger.NewLogger(&config.AppConfig{}), mockClient) // fixme test cfg
 
 	t.Run("get sample", func(t *testing.T) {
 		ID := "123"

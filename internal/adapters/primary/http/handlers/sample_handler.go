@@ -8,6 +8,7 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/request"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers/queryparameter"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
@@ -16,13 +17,19 @@ import (
 )
 
 type SampleHandler struct {
-	log           logger.Logger
+	logger        logger.Logger
+	JSONWriter    *presenter.JSONWriter
 	sampleUsecase usecases.SampleUsecase
 }
 
-func NewSampleHandler(log logger.Logger, sampleUsecase usecases.SampleUsecase) *SampleHandler {
+func NewSampleHandler(
+	logger logger.Logger,
+	JSONWriter *presenter.JSONWriter,
+	sampleUsecase usecases.SampleUsecase,
+) *SampleHandler {
 	return &SampleHandler{
-		log:           log,
+		logger:        logger,
+		JSONWriter:    JSONWriter,
 		sampleUsecase: sampleUsecase,
 	}
 }
@@ -45,22 +52,22 @@ func (h *SampleHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	p := queryparameter.NewOffsetLimitParams(r)
 	if err := validator.Validate(p); err != nil {
-		h.log.ErrorContext(ctx, "Invalid parameters", "error", err)
-		writeError(w, err)
+		h.logger.ErrorContext(ctx, "Invalid parameters", "error", err)
+		h.JSONWriter.WriteError(w, err)
 		return
 	}
 
 	// サンプルリストの取得
 	samples, err := h.sampleUsecase.List(ctx, p.Offset, p.Limit)
 	if err != nil {
-		h.log.ErrorContext(ctx, "Failed to get sample list", "error", err)
-		writeError(w, err)
+		h.logger.ErrorContext(ctx, "Failed to get sample list", "error", err)
+		h.JSONWriter.WriteError(w, err)
 		return
 	}
 
 	res := response.ToListSampleResponse(samples, p.Offset, p.Limit)
 
-	writeJSONResponse(ctx, w, res)
+	h.JSONWriter.Write(ctx, w, res)
 }
 
 // Create godoc
@@ -82,13 +89,13 @@ func (h *SampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req request.SampleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.log.ErrorContext(ctx, "Failed to decode sample request", "error", err)
-		writeError(w, apperrors.NewBadRequestError("Invalid request body", err))
+		h.logger.ErrorContext(ctx, "Failed to decode sample request", "error", err)
+		h.JSONWriter.WriteError(w, apperrors.NewBadRequestError("Invalid request body", err))
 		return
 	}
 
 	if validationErrors := validator.Validate(req); validationErrors != nil {
-		writeError(w, validationErrors)
+		h.JSONWriter.WriteError(w, validationErrors)
 		return
 	}
 
@@ -102,7 +109,7 @@ func (h *SampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: time.Now(),
 	}
 
-	writeJSONResponse(ctx, w, res)
+	h.JSONWriter.Write(ctx, w, res)
 }
 
 // Get godoc
@@ -124,26 +131,26 @@ func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	ID := chi.URLParam(r, "id")
 	if ID == "" {
-		h.log.ErrorContext(ctx, "ID is required")
-		writeError(w, apperrors.NewBadRequestError("ID is required", nil))
+		h.logger.ErrorContext(ctx, "ID is required")
+		h.JSONWriter.WriteError(w, apperrors.NewBadRequestError("ID is required", nil))
 		return
 	}
 	if err := validator.ValidateVar(ID, "sampleId", "path parameter"); err != nil {
-		h.log.WarnContext(ctx, "Invalid sample ID format", "id", ID)
-		writeError(w, err)
+		h.logger.WarnContext(ctx, "Invalid sample ID format", "id", ID)
+		h.JSONWriter.WriteError(w, err)
 		return
 	}
 
 	sample, err := h.sampleUsecase.Get(ctx, ID)
 	if err != nil {
-		h.log.ErrorContext(ctx, "Failed to get sample", "error", err)
-		writeError(w, err)
+		h.logger.ErrorContext(ctx, "Failed to get sample", "error", err)
+		h.JSONWriter.WriteError(w, err)
 		return
 	}
 
 	res := response.ToSampleResponse(sample)
 
-	writeJSONResponse(ctx, w, res)
+	h.JSONWriter.Write(ctx, w, res)
 }
 
 func (h *SampleHandler) Update(w http.ResponseWriter, _ *http.Request) {

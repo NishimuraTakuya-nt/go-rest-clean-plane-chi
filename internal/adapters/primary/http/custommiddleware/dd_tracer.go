@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/go-chi/chi/v5/middleware"
 	chitrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/go-chi/chi.v5"
 )
 
+// todo struct
 func DDTracer() Middleware {
 	// Datadogのミドルウェア
 	ddMiddleware := chitrace.Middleware(
@@ -23,14 +24,15 @@ func DDTracer() Middleware {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			log := logger.NewLogger()
+			//log := logger.NewLogger() // todo fixme
+			log := slog.Default() // todo delete
 			ctx := r.Context()
 			requestID := middleware.GetReqID(ctx)
 
 			// リクエスト開始時のログ
 			log.InfoContext(ctx, "Request started")
 
-			rw := NewWrapResponseWriter(w)
+			rw := presenter.NewWrapResponseWriter(w)
 
 			// Datadogでラップされたハンドラーを実行
 			wrappedHandler.ServeHTTP(rw, r.WithContext(ctx))

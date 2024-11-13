@@ -7,7 +7,46 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Config AppConfig
+type Loader struct {
+	v *viper.Viper
+}
+
+func NewLoader() *Loader {
+	return &Loader{
+		v: viper.New(),
+	}
+}
+
+func (l *Loader) Load() (*AppConfig, error) {
+	l.setDefaults()
+	l.v.AutomaticEnv()
+
+	var cfg AppConfig
+	if err := l.v.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}
+
+func (l *Loader) setDefaults() {
+	l.v.SetDefault("env", "dev")
+	l.v.SetDefault("log_level", "INFO")
+	l.v.SetDefault("server_address", ":8081")
+	l.v.SetDefault("allowed_origins", []string{"*"})
+	l.v.SetDefault("jwt_secret_key", "jwt-secret")
+	l.v.SetDefault("request_timeout", 180*time.Second)
+	//v.SetDefault("request_timeout", 1*time.Second) // fixme
+
+	l.v.SetDefault("dd_enabled", true)
+	l.v.SetDefault("dd_agent_host", "localhost")
+	//v.SetDefault("dd_agent_port", "4317") // case: open telemetry grpc
+	l.v.SetDefault("dd_agent_port", "8126") // case: datadog SDK
+}
 
 type AppConfig struct {
 	Env            string        `mapstructure:"env" validate:"required"`
@@ -18,28 +57,9 @@ type AppConfig struct {
 	JWTSecretKey   string        `mapstructure:"jwt_secret_key" validate:"required"`
 	RequestTimeout time.Duration `mapstructure:"request_timeout" validate:"required"`
 	// DataDog Agent
+	DDEnabled   bool   `mapstructure:"dd_enabled" validate:"required"`
 	DDAgentHost string `mapstructure:"dd_agent_host" validate:"required"`
 	DDAgentPort string `mapstructure:"dd_agent_port" validate:"required"`
-}
-
-func init() {
-	v := viper.New()
-	v.SetDefault("env", "dev")
-	v.SetDefault("log_level", "INFO")
-	v.SetDefault("server_address", ":8081")
-	v.SetDefault("allowed_origins", []string{"*"})
-	v.SetDefault("jwt_secret_key", "jwt-secret")
-	v.SetDefault("request_timeout", 180*time.Second)
-	//v.SetDefault("request_timeout", 1*time.Second) // fixme
-
-	// DataDog Agent
-	v.SetDefault("dd_agent_host", "localhost")
-	v.SetDefault("dd_agent_port", "4317")
-
-	v.AutomaticEnv()
-	if err := v.Unmarshal(&Config); err != nil {
-		panic(err)
-	}
 }
 
 // Validate validates the config values.

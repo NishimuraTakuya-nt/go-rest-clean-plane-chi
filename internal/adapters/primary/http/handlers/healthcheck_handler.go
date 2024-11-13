@@ -1,21 +1,22 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type HealthcheckHandler struct {
-	log logger.Logger
+	logger     logger.Logger
+	JSONWriter *presenter.JSONWriter
 }
 
-func NewHealthcheckHandler(log logger.Logger) *HealthcheckHandler {
+func NewHealthcheckHandler(logger logger.Logger, JSONWriter *presenter.JSONWriter) *HealthcheckHandler {
 	return &HealthcheckHandler{
-		log: log,
+		logger:     logger,
+		JSONWriter: JSONWriter,
 	}
 }
 
@@ -28,16 +29,23 @@ func NewHealthcheckHandler(log logger.Logger) *HealthcheckHandler {
 // @Failure 500 {object} response.ErrorResponse
 // @Router /healthcheck [get]
 func (h *HealthcheckHandler) Get(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tracer := otel.Tracer("health-check-handler")
-	_, span := tracer.Start(ctx, "health-check")
-	defer span.End()
+	//ctx := r.Context()
+	//tracer := otel.Tracer("health-check-handler")
+	//_, span := tracer.Start(ctx, "health-check")
+	//defer span.End()
+	//
+	//// スパンにカスタム属性を追加
+	//span.SetAttributes(attribute.String("custom.attribute", "test-value"))
 
-	// スパンにカスタム属性を追加
-	span.SetAttributes(attribute.String("custom.attribute", "test-value"))
+	span, ctx := tracer.StartSpanFromContext(r.Context(), "test.operation",
+		tracer.SpanType("web"),
+		tracer.ResourceName("/test"),
+	)
+	defer span.Finish()
+	span.SetTag("custom.tag", "test-value")
 
-	// healthcheck
-	h.log.InfoContext(ctx, "Healthcheck ok")
-	// nolint:errcheck
-	json.NewEncoder(w).Encode(map[string]string{"message": "healthcheck ok"})
+	h.logger.InfoContext(ctx, "Healthcheck ok")
+
+	res := map[string]string{"message": "healthcheck ok"}
+	h.JSONWriter.Write(ctx, w, res)
 }

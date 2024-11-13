@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	_ "github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/docs/swagger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
 )
 
 // @title Go REST Clean API with Chi
@@ -25,36 +27,35 @@ import (
 // @name Authorization
 func main() {
 	if err := run(); err != nil {
-		logger.NewLogger().Error("Application failed to run", "error", err)
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	log := logger.NewLogger()
-	cfg := config.Config
-	if err := cfg.Validate(); err != nil {
-		log.Error("config validation failed", slog.String("error", err.Error()))
-		panic(err)
+	configLoader := config.NewLoader()
+	cfg, err := configLoader.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
 	}
+	logger := logger.NewLogger(cfg)
 
 	////// Datadogトレーサー（SDK）の初期化 // fixme choose one tracer
-	//tracer.Start(
-	//	tracer.WithService(cfg.ServiceName),
-	//	tracer.WithEnv(cfg.Env),
-	//	tracer.WithServiceVersion(cfg.Version),
-	//	tracer.WithAgentAddr(fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)),
-	//)
-	//defer tracer.Stop()
+	ddTracer := datadog.NewTracer(cfg, logger)
+	if err := ddTracer.Start(); err != nil {
+		logger.Error("Failed to initialize Datadog tracer", "error", err)
+		return err
+	}
+	defer ddTracer.Stop()
 
-	router, telemetryCleanup, err := InitializeAPI()
+	router, err := InitializeRouter(cfg, logger)
 	if err != nil {
 		return err
 	}
+	h := router.Setup()
 
 	srv := &http.Server{
 		Addr:    cfg.ServerAddress,
-		Handler: router,
+		Handler: h,
 	}
 
 	// シグナルを受け取るためのコンテキストを設定
@@ -63,15 +64,15 @@ func run() error {
 
 	// サーバーをゴルーチンで起動
 	go func() {
-		log.Info("Server started", slog.String("address", cfg.ServerAddress))
+		logger.Info("Server started", slog.String("address", cfg.ServerAddress))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error("Server listen failed", slog.String("error", err.Error()))
+			logger.Error("Server listen failed", slog.String("error", err.Error()))
 		}
 	}()
 
 	// シグナルを待機
 	<-ctx.Done()
-	log.Info("Shutdown signal received")
+	logger.Info("Shutdown signal received")
 
 	// シャットダウンのためのコンテキストを作成
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -80,17 +81,17 @@ func run() error {
 	// 順番にシャットダウン
 	// 1. HTTPサーバー
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Error("Server forced to shutdown", slog.String("error", err.Error()))
+		logger.Error("Server forced to shutdown", slog.String("error", err.Error()))
 		return err
 	}
 	// 2. Telemetry
-	telemetryCleanup()
+	//telemetryCleanup()
 
 	// その他のリソースのクリーンアップ
 	//if err := graphQLClient.Close(); err != nil {
-	//	log.Error("Error closing GraphQL client", slog.String("error", err.Error()))
+	//	logger.Error("Error closing GraphQL client", slog.String("error", err.Error()))
 	//}
 
-	log.Info("Server exited properly")
+	logger.Info("Server exited properly")
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,7 +15,19 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-func OTELTracer() Middleware {
+type OTELTracer struct {
+	logger logger.Logger
+}
+
+func NewOTELTracer(
+	logger logger.Logger,
+) *OTELTracer {
+	return &OTELTracer{
+		logger: logger,
+	}
+}
+
+func (h OTELTracer) Handle() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -24,11 +37,10 @@ func OTELTracer() Middleware {
 			defer span.End()
 
 			start := time.Now()
-			log := logger.NewLogger()
 			requestID := middleware.GetReqID(ctx)
 
 			// リクエスト開始時のログ
-			log.InfoContext(ctx, "Request started")
+			h.logger.InfoContext(ctx, "Request started")
 
 			// 基本的なリクエスト情報の記録
 			span.SetAttributes(
@@ -39,7 +51,7 @@ func OTELTracer() Middleware {
 			)
 
 			// WrapResponseWriter のラッピングを一度だけ行う（後続ではこれを使い回す）
-			rw := NewWrapResponseWriter(w)
+			rw := presenter.NewWrapResponseWriter(w)
 
 			// 次のハンドラーの実行
 			next.ServeHTTP(rw, r.WithContext(ctx))
@@ -71,7 +83,7 @@ func OTELTracer() Middleware {
 				span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", rw.StatusCode))
 			}
 
-			log.InfoContext(ctx,
+			h.logger.InfoContext(ctx,
 				"Request completed",
 				slog.Int("status", rw.StatusCode),
 				slog.Int64("bytes", rw.Length),

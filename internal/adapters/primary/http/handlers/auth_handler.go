@@ -6,19 +6,22 @@ import (
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/request"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 
 type AuthHandler struct {
-	log         logger.Logger
+	logger      logger.Logger
+	JSONWriter  *presenter.JSONWriter
 	authUsecase usecases.AuthUsecase
 }
 
-func NewAuthHandler(log logger.Logger, authUsecase usecases.AuthUsecase) *AuthHandler {
+func NewAuthHandler(logger logger.Logger, JSONWriter *presenter.JSONWriter, authUsecase usecases.AuthUsecase) *AuthHandler {
 	return &AuthHandler{
-		log:         log,
+		logger:      logger,
+		JSONWriter:  JSONWriter,
 		authUsecase: authUsecase,
 	}
 }
@@ -39,8 +42,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req request.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.log.ErrorContext(ctx, "Failed to decode login request", "error", err)
-		writeError(w, apperrors.NewBadRequestError("Invalid request body", err))
+		h.logger.ErrorContext(ctx, "Failed to decode login request", "error", err)
+		h.JSONWriter.WriteError(w, apperrors.NewBadRequestError("Invalid request body", err))
 		return
 	}
 
@@ -51,8 +54,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.authUsecase.Login(r.Context(), userID, roles)
 	if err != nil {
-		h.log.ErrorContext(ctx, "Failed to generate token", "error", err)
-		writeError(w, apperrors.NewInternalError("Failed to generate token", err))
+		h.logger.ErrorContext(ctx, "Failed to generate token", "error", err)
+		h.JSONWriter.WriteError(w, apperrors.NewInternalError("Failed to generate token", err))
 		return
 	}
 
@@ -60,9 +63,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
-		h.log.ErrorContext(ctx, "Failed to encode login response", "error", err)
+		h.logger.ErrorContext(ctx, "Failed to encode login response", "error", err)
 		return
 	}
 
-	h.log.InfoContext(ctx, "Login successful")
+	h.logger.InfoContext(ctx, "Login successful")
 }

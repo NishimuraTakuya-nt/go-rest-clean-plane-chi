@@ -4,29 +4,30 @@
 package main
 
 import (
-	"net/http"
-
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/custommiddleware"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/secondary/piyographql"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
 	"github.com/google/wire"
 )
 
-func InitializeAPI() (http.Handler, func(), error) {
+func InitializeRouter(cfg *config.AppConfig, logger logger.Logger) (*routes.Router, error) {
 	wire.Build(
-		logger.Set,
+		presenter.Set,
+		custommiddleware.Set,
 		piyographql.Set,
 		auth.Set,
 		usecases.Set,
 		handlers.Set,
 		v1.Set,
-		telemetry.Set,
+		//telemetry.Set,
 		routes.Set,
 	)
-	return nil, nil, nil
+	return nil, nil
 }

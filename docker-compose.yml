@@ -15,31 +15,38 @@ services:
       - go-modules:/go/pkg/mod
     depends_on:
       - datadog-agent
-    networks:
-      - datadog_network
 
   datadog-agent:
     image: datadog/agent:latest
     ports:
-      - "4317:4317"
+      - "8126:8126"  # APM用ポート
+      - "8125:8125/udp"
     environment:
       - DD_API_KEY=${DD_API_KEY}
       - DD_SITE=ap1.datadoghq.com
       - DD_APM_ENABLED=true
-      - DD_APM_NON_LOCAL_TRAFFIC=true # 非ローカルトラフィックの受け入れ
-      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENABLED=true
-      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
-      - DD_OTLP_CONFIG_DEBUG=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
+      - DD_APM_MAX_EPS=200  # Event Per Second制限
+      - DD_APM_MAX_TPS=200  # Traces Per Second制限
+      - DD_LOG_LEVEL=debug  # debug, info, warn, error
+      - DD_APM_DEBUG=true
+#      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENABLED=true
+#      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
+#      - DD_OTLP_CONFIG_DEBUG=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
-    networks:
-      - datadog_network
-
-networks:
-  datadog_network:
-    driver: bridge
+      - /opt/datadog-agent/run:/opt/datadog-agent/run:rw  # APMデータの永続化
+      - /tmp/datadog-agent-run:/opt/datadog-agent/run:rw
+    healthcheck:
+      test: [ "CMD", "agent", "health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   go-modules:

@@ -34,10 +34,10 @@ type customLogger struct {
 }
 
 // NewLogger カスタムロガーを作成
-func NewLogger() Logger {
+func NewLogger(cfg *config.AppConfig) Logger {
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
-		Level:     getLevelFromEnv(),
+		Level:     getLevelFromEnv(cfg.LogLevel),
 		ReplaceAttr: func(_ []string, att slog.Attr) slog.Attr {
 			if att.Key == slog.SourceKey {
 				const skip = 7
@@ -133,9 +133,8 @@ func (l *customLogger) With(args ...any) Logger {
 }
 
 // getLevelFromEnv
-func getLevelFromEnv() slog.Level {
-	levelStr := config.Config.LogLevel
-	switch levelStr {
+func getLevelFromEnv(logLevel string) slog.Level {
+	switch logLevel {
 	case "DEBUG":
 		return slog.LevelDebug
 	case "INFO":

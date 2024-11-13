@@ -3,19 +3,34 @@ package custommiddleware
 import (
 	"context"
 	"net/http"
-	"time"
 
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 
-func Timeout(duration time.Duration) Middleware {
+type Timeout struct {
+	logger logger.Logger
+	cfg    *config.AppConfig
+}
+
+func NewTimeout(
+	logger logger.Logger,
+	cfg *config.AppConfig,
+) *Timeout {
+	return &Timeout{
+		logger: logger,
+		cfg:    cfg,
+	}
+}
+
+func (h Timeout) Handle() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, cancel := context.WithTimeout(r.Context(), duration)
+			ctx, cancel := context.WithTimeout(r.Context(), h.cfg.RequestTimeout)
 			defer cancel()
-			log := logger.NewLogger()
-			rw := GetWrapResponseWriter(w)
+			rw := presenter.GetWrapResponseWriter(w)
 
 			done := make(chan bool)
 			go func() {
@@ -27,7 +42,7 @@ func Timeout(duration time.Duration) Middleware {
 			case <-done:
 				return
 			case <-ctx.Done():
-				log.ErrorContext(r.Context(), "Request timed out")
+				h.logger.ErrorContext(r.Context(), "Request timed out")
 				rw.WriteError(apperrors.NewTimeoutError("Request timed out", ctx.Err()))
 			}
 		})

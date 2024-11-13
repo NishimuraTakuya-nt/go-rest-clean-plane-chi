@@ -2,23 +2,37 @@ package custommiddleware
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func ErrorHandler() Middleware {
+type ErrorHandling struct {
+	logger     logger.Logger
+	JSONWriter *presenter.JSONWriter
+}
+
+func NewErrorHandling(
+	logger logger.Logger,
+	JSONWriter *presenter.JSONWriter,
+) *ErrorHandling {
+	return &ErrorHandling{
+		logger:     logger,
+		JSONWriter: JSONWriter,
+	}
+}
+
+func (h *ErrorHandling) Handle() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log := logger.NewLogger()
-			rw := GetWrapResponseWriter(w)
+			rw := presenter.GetWrapResponseWriter(w)
 
 			defer func() {
 				if re := recover(); re != nil {
@@ -36,7 +50,7 @@ func ErrorHandler() Middleware {
 					stack := debug.Stack()
 
 					// 詳細なログを記録
-					log.ErrorContext(r.Context(),
+					h.logger.ErrorContext(r.Context(),
 						"Panic occurred",
 						"error", panicErr,
 						"stack", string(stack),
@@ -46,20 +60,20 @@ func ErrorHandler() Middleware {
 					clientErr := apperrors.NewInternalError("Unexpected error occurred", panicErr)
 
 					// エラーハンドリング
-					handleError(r.Context(), rw, clientErr)
+					h.handleError(r.Context(), rw, clientErr)
 				}
 			}()
 
 			next.ServeHTTP(rw, r)
 
 			if rw.Err != nil {
-				handleError(r.Context(), rw, rw.Err)
+				h.handleError(r.Context(), rw, rw.Err)
 			}
 		})
 	}
 }
 
-func handleError(ctx context.Context, rw *WrapResponseWriter, err error) {
+func (h *ErrorHandling) handleError(ctx context.Context, rw *presenter.WrapResponseWriter, err error) {
 	var res response.ErrorResponse
 	var statusCode int
 	requestID := middleware.GetReqID(ctx)
@@ -104,7 +118,5 @@ func handleError(ctx context.Context, rw *WrapResponseWriter, err error) {
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(statusCode)
-	if err := json.NewEncoder(rw).Encode(res); err != nil {
-		logger.NewLogger().ErrorContext(ctx, "Failed to encode error response", "error", err)
-	}
+	h.JSONWriter.Write(ctx, rw, res)
 }

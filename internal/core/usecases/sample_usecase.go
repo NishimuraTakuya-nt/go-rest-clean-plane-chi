@@ -14,19 +14,19 @@ type SampleUsecase interface {
 }
 
 type sampleUsecase struct {
-	log           logger.Logger
+	logger        logger.Logger
 	graphqlClient piyographql.Client
 }
 
-func NewSampleUsecase(log logger.Logger, client piyographql.Client) SampleUsecase {
+func NewSampleUsecase(logger logger.Logger, client piyographql.Client) SampleUsecase {
 	return &sampleUsecase{
-		log:           log,
+		logger:        logger,
 		graphqlClient: client,
 	}
 }
 
 func (uc *sampleUsecase) Get(ctx context.Context, ID string) (*models.Sample, error) {
-	// todo trace log
+	// todo trace logger
 	return uc.graphqlClient.GetSample(ctx, ID)
 }
 

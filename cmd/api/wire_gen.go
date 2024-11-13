@@ -7,15 +7,16 @@
 package main
 
 import (
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/custommiddleware"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/handlers"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/secondary/piyographql"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry"
-	"net/http"
 )
 
 import (
@@ -24,24 +25,21 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeAPI() (http.Handler, func(), error) {
-	loggerLogger := logger.NewLogger()
-	healthcheckHandler := handlers.NewHealthcheckHandler(loggerLogger)
-	healthcheckRouter := v1.NewHealthcheckRouter(healthcheckHandler)
-	tokenService := auth.NewTokenService()
+func InitializeRouter(cfg *config.AppConfig, logger2 logger.Logger) (*routes.Router, error) {
+	jsonWriter := presenter.NewJSONWriter(logger2)
+	errorHandling := custommiddleware.NewErrorHandling(logger2, jsonWriter)
+	timeout := custommiddleware.NewTimeout(logger2, cfg)
+	tokenService := auth.NewTokenService(cfg)
 	authUsecase := usecases.NewAuthUsecase(tokenService)
-	authHandler := handlers.NewAuthHandler(loggerLogger, authUsecase)
+	authentication := custommiddleware.NewAuthentication(logger2, jsonWriter, authUsecase)
+	healthcheckHandler := handlers.NewHealthcheckHandler(logger2, jsonWriter)
+	healthcheckRouter := v1.NewHealthcheckRouter(healthcheckHandler)
+	authHandler := handlers.NewAuthHandler(logger2, jsonWriter, authUsecase)
 	authRouter := v1.NewAuthRouter(authHandler)
-	client := piyographql.NewClient(loggerLogger)
-	sampleUsecase := usecases.NewSampleUsecase(loggerLogger, client)
-	sampleHandler := handlers.NewSampleHandler(loggerLogger, sampleUsecase)
+	client := piyographql.NewClient(logger2)
+	sampleUsecase := usecases.NewSampleUsecase(logger2, client)
+	sampleHandler := handlers.NewSampleHandler(logger2, jsonWriter, sampleUsecase)
 	sampleRouter := v1.NewSampleRouter(sampleHandler)
-	telemetryProvider, err := telemetry.InitTelemetry()
-	if err != nil {
-		return nil, nil, err
-	}
-	handler, cleanup := routes.NewRouter(healthcheckRouter, authRouter, authUsecase, sampleRouter, telemetryProvider)
-	return handler, func() {
-		cleanup()
-	}, nil
+	router := routes.NewRouter(cfg, errorHandling, timeout, authentication, healthcheckRouter, authRouter, sampleRouter)
+	return router, nil
 }

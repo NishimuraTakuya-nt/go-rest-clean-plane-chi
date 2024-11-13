@@ -14,13 +14,13 @@ type Client interface {
 }
 
 type client struct {
-	log logger.Logger
+	logger logger.Logger
 	// クライアントの設定など
 }
 
-func NewClient(log logger.Logger) Client {
+func NewClient(logger logger.Logger) Client {
 	return &client{
-		log: log,
+		logger: logger,
 	}
 }
 
@@ -40,7 +40,7 @@ func (c *client) GetSample(_ context.Context, ID string) (*models.Sample, error)
 }
 
 func (c *client) ListSample(ctx context.Context, offset, limit *int) ([]models.Sample, error) {
-	c.log.InfoContext(ctx, "client ListSample", "offset", offset, "limit", limit)
+	c.logger.InfoContext(ctx, "client ListSample", "offset", offset, "limit", limit)
 	return []models.Sample{
 		{
 			ID:        "1",
