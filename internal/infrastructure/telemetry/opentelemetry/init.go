@@ -81,7 +81,7 @@ func InitTelemetry(cfg *config.AppConfig, logger logger.Logger) (*OpenTelemetryP
 
 // initTracer トレーサーの初期化
 func initTracer(ctx context.Context, res *resource.Resource, cfg *config.AppConfig) (*sdktrace.TracerProvider, error) {
-	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)
+	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentTracePort)
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithInsecure(),
@@ -119,7 +119,7 @@ func initTracer(ctx context.Context, res *resource.Resource, cfg *config.AppConf
 
 // initMetrics メトリクスの初期化
 func initMetrics(ctx context.Context, res *resource.Resource, cfg *config.AppConfig) (*sdkmetric.MeterProvider, *AppMetrics, error) {
-	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentPort)
+	endpoint := fmt.Sprintf("%s:%s", cfg.DDAgentHost, cfg.DDAgentTracePort)
 	exporter, err := otlpmetricgrpc.New(ctx,
 		otlpmetricgrpc.WithEndpoint(endpoint),
 		otlpmetricgrpc.WithInsecure(),

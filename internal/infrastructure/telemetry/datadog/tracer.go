@@ -34,23 +34,23 @@ func (t *Tracer) Start() error {
 		tracer.WithServiceVersion(t.cfg.Version),
 		tracer.WithAgentAddr(fmt.Sprintf("%s:%s",
 			t.cfg.DDAgentHost,
-			t.cfg.DDAgentPort,
+			t.cfg.DDAgentTracePort,
 		)),
 		// サンプリングレートの設定
 		tracer.WithSamplingRules([]tracer.SamplingRule{
 			{
-				Rate: 1.0,
+				Rate: t.cfg.DDSamplingRate,
 			},
 		}),
 		// デバッグモードの設定
-		tracer.WithDebugMode(t.cfg.LogLevel == "debug"),
+		tracer.WithDebugMode(t.cfg.LogLevel == "DEBUG"),
 		// プロファイラーの設定
 		tracer.WithRuntimeMetrics(),
 	)
 
 	t.logger.Info("Datadog tracer initialized successfully",
 		"agent_host", t.cfg.DDAgentHost,
-		"agent_port", t.cfg.DDAgentPort,
+		"agent_port", t.cfg.DDAgentTracePort,
 		"env", t.cfg.Env,
 	)
 	return nil
@@ -58,7 +58,8 @@ func (t *Tracer) Start() error {
 
 func (t *Tracer) Stop() {
 	if t.cfg.DDEnabled {
-		t.logger.Info("Stopping Datadog tracer")
+		t.logger.Info("Stopping tracer")
 		tracer.Stop()
+		t.logger.Info("Tracer shutdown completed")
 	}
 }

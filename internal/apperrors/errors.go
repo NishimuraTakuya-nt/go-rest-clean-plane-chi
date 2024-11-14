@@ -2,21 +2,11 @@ package apperrors
 
 import (
 	"net/http"
+	"runtime"
+
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
-// AppError はアプリケーション固有のエラーを表します。
-type AppError struct {
-	Type       ErrorType
-	RawError   error
-	StatusCode int
-	Message    string
-}
-
-func (e *AppError) Error() string {
-	return e.Message
-}
-
-// ErrorType はエラーの種類を表す列挙型です。
 type ErrorType string
 
 const (
@@ -32,13 +22,60 @@ const (
 	ErrorTypeTimeout            ErrorType = "TIMEOUT"
 )
 
-// NewAppError creates a new AppError
+// AppError はアプリケーション固有のエラーを表します。
+type AppError struct {
+	Type       ErrorType
+	RawError   error
+	StatusCode int
+	Message    string
+	File       string
+	Line       int
+	Function   string
+}
+
+func (e *AppError) Error() string {
+	return e.Message
+}
+
 func NewAppError(errType ErrorType, rawErr error, statusCode int, message string) *AppError {
-	return &AppError{
+	appErr := &AppError{
 		Type:       errType,
 		RawError:   rawErr,
 		StatusCode: statusCode,
 		Message:    message,
+	}
+	appErr.captureStack(2) // 呼び出し元の情報を取得
+	return appErr
+}
+
+func (e *AppError) captureStack(skip int) {
+	pc, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		return
+	}
+
+	fn := runtime.FuncForPC(pc)
+	if fn != nil {
+		e.Function = fn.Name()
+	}
+	e.File = file
+	e.Line = line
+}
+
+func (e *AppError) AddToSpan(span tracer.Span) {
+	if span == nil {
+		return
+	}
+	span.SetTag("error", true)
+	span.SetTag("error.type", string(e.Type))
+	span.SetTag("error.message", e.Message)
+	span.SetTag("error.status_code", e.StatusCode)
+	span.SetTag("error.file", e.File)
+	span.SetTag("error.line", e.Line)
+	span.SetTag("error.function", e.Function)
+
+	if e.RawError != nil {
+		span.SetTag("error.raw", e.RawError.Error())
 	}
 }
 

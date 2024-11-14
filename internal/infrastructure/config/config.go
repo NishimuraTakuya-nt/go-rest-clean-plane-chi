@@ -45,7 +45,9 @@ func (l *Loader) setDefaults() {
 	l.v.SetDefault("dd_enabled", true)
 	l.v.SetDefault("dd_agent_host", "localhost")
 	//v.SetDefault("dd_agent_port", "4317") // case: open telemetry grpc
-	l.v.SetDefault("dd_agent_port", "8126") // case: datadog SDK
+	l.v.SetDefault("dd_agent_trace_port", "8126") // case: datadog SDK
+	l.v.SetDefault("dd_agent_metrics_port", "8125")
+	l.v.SetDefault("dd_sampling_rate", 1.0)
 }
 
 type AppConfig struct {
@@ -57,9 +59,11 @@ type AppConfig struct {
 	JWTSecretKey   string        `mapstructure:"jwt_secret_key" validate:"required"`
 	RequestTimeout time.Duration `mapstructure:"request_timeout" validate:"required"`
 	// DataDog Agent
-	DDEnabled   bool   `mapstructure:"dd_enabled" validate:"required"`
-	DDAgentHost string `mapstructure:"dd_agent_host" validate:"required"`
-	DDAgentPort string `mapstructure:"dd_agent_port" validate:"required"`
+	DDEnabled          bool    `mapstructure:"dd_enabled" validate:"required"`
+	DDAgentHost        string  `mapstructure:"dd_agent_host" validate:"required"`
+	DDAgentTracePort   string  `mapstructure:"dd_agent_trace_port" validate:"required"`
+	DDAgentMetricsPort string  `mapstructure:"dd_agent_metrics_port" validate:"required"`
+	DDSamplingRate     float64 `mapstructure:"dd_sampling_rate" validate:"required"`
 }
 
 // Validate validates the config values.

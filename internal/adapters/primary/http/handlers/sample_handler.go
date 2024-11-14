@@ -136,7 +136,7 @@ func (h *SampleHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := validator.ValidateVar(ID, "sampleId", "path parameter"); err != nil {
-		h.logger.WarnContext(ctx, "Invalid sample ID format", "id", ID)
+		h.logger.ErrorContext(ctx, "Invalid sample ID format", "id", ID)
 		h.JSONWriter.WriteError(w, err)
 		return
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/common/contextkeys"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/go-chi/chi/v5/middleware"
-	"go.opentelemetry.io/otel/trace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // Logger インターフェース
@@ -76,14 +76,21 @@ func (l *customLogger) addStandardFields(ctx context.Context, args []any) []any 
 			)
 		}
 		// トレース情報の追加
-		if span := trace.SpanFromContext(ctx); span.IsRecording() {
-			spanContext := span.SpanContext()
-			if spanContext.HasTraceID() {
-				args = append(args,
-					"trace_id", spanContext.TraceID().String(),
-					"span_id", spanContext.SpanID().String(),
-				)
-			}
+		//if span := trace.SpanFromContext(ctx); span.IsRecording() { // case: opentelemetry
+		//	spanContext := span.SpanContext()
+		//	if spanContext.HasTraceID() {
+		//		args = append(args,
+		//			"trace_id", spanContext.TraceID().String(),
+		//			"span_id", spanContext.SpanID().String(),
+		//		)
+		//	}
+		//}
+		if span, ok := tracer.SpanFromContext(ctx); ok {
+			spanCtx := span.Context()
+			args = append(args,
+				"dd.trace_id", fmt.Sprintf("%d", spanCtx.TraceID()),
+				"dd.span_id", fmt.Sprintf("%d", spanCtx.SpanID()),
+			)
 		}
 	}
 	return args

@@ -46,14 +46,12 @@ func run() error {
 		return fmt.Errorf("failed to initialize metrics manager: %w", err)
 	}
 	metricsManager.Start()
-	defer metricsManager.Stop()
 	// tracer
 	ddTracer := datadog.NewTracer(cfg, logger)
 	if err := ddTracer.Start(); err != nil {
 		logger.Error("Failed to initialize Datadog tracer", "error", err)
 		return err
 	}
-	defer ddTracer.Stop()
 
 	router, err := InitializeRouter(cfg, logger, metricsManager)
 	if err != nil {
@@ -92,8 +90,11 @@ func run() error {
 		logger.Error("Server forced to shutdown", slog.String("error", err.Error()))
 		return err
 	}
-	// 2. Telemetry
-	//telemetryCleanup()
+	// 2. tracer
+	ddTracer.Stop()
+
+	// 3. metrics manager
+	metricsManager.Stop()
 
 	// その他のリソースのクリーンアップ
 	//if err := graphQLClient.Close(); err != nil {

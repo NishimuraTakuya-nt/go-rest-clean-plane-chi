@@ -1,12 +1,14 @@
 package custommiddleware
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -29,10 +31,6 @@ func (t *DDTracer) Handle() Middleware {
 			start := time.Now()
 			ctx := r.Context()
 
-			// リクエスト開始時のログ
-			t.logger.InfoContext(ctx, "Request started")
-
-			// スパンの作成
 			opts := []tracer.StartSpanOption{
 				tracer.ResourceName(fmt.Sprintf("%s %s", r.Method, r.URL.Path)),
 				tracer.SpanType("web"),
@@ -45,13 +43,14 @@ func (t *DDTracer) Handle() Middleware {
 			span, ctx := tracer.StartSpanFromContext(ctx, "http.request", opts...)
 			defer span.Finish()
 
+			// リクエスト開始時のログ
+			t.logger.InfoContext(ctx, "Request started")
+
 			// WrapResponseWriter のラッピングを一度だけ行う（後続ではこれを使い回す）
 			rw := presenter.NewWrapResponseWriter(w)
 
-			// 次のハンドラーの実行
 			next.ServeHTTP(rw, r.WithContext(ctx))
 
-			// 処理時間の計算
 			duration := time.Since(start)
 
 			// ルーティングパターンの取得と設定
@@ -60,7 +59,7 @@ func (t *DDTracer) Handle() Middleware {
 				normalizedPattern := fmt.Sprintf("%s %s", r.Method, rctx.RoutePattern())
 				// スパン名の更新
 				span.SetOperationName(normalizedPattern)
-				// リソース名の設定
+				// リソース名の更新
 				span.SetTag("resource.name", normalizedPattern)
 			}
 
@@ -69,14 +68,12 @@ func (t *DDTracer) Handle() Middleware {
 			span.SetTag("http.response_size", rw.Length)
 			span.SetTag("http.duration", duration.String())
 
-			// エラーハンドリング
 			if rw.Err != nil {
-				span.SetTag("error", true)
-				span.SetTag("error.message", rw.Err.Error())
-				span.SetTag("error.type", fmt.Sprintf("%T", rw.Err))
-				// スタックトレースが必要な場合
-				if stackTracer, ok := rw.Err.(interface{ StackTrace() []byte }); ok {
-					span.SetTag("error.stack", string(stackTracer.StackTrace()))
+				var errorTracer apperrors.ErrorTracer
+				if errors.As(rw.Err, &errorTracer) {
+					// Spanにエラー情報を追加
+					errorTracer.AddToSpan(span)
+
 				}
 			} else if rw.StatusCode >= 500 {
 				span.SetTag("error", true)

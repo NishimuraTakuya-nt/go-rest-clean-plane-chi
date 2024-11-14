@@ -3,6 +3,8 @@ package apperrors
 import (
 	"fmt"
 	"strings"
+
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // FieldError represents a validation error for a specific field
@@ -14,6 +16,11 @@ type FieldError struct {
 
 // ValidationErrors is a collection of FieldErrors
 type ValidationErrors []FieldError
+
+// NewValidationErrors creates a new ValidationErrors instance
+func NewValidationErrors() *ValidationErrors {
+	return &ValidationErrors{}
+}
 
 func (ve *ValidationErrors) Error() string {
 	var errMessages []string
@@ -28,7 +35,13 @@ func (ve *ValidationErrors) AddError(field string, value any, message string) {
 	*ve = append(*ve, FieldError{Field: field, Value: value, Message: message})
 }
 
-// NewValidationErrors creates a new ValidationErrors instance
-func NewValidationErrors() *ValidationErrors {
-	return &ValidationErrors{}
+func (ve *ValidationErrors) AddToSpan(span tracer.Span) {
+	if span == nil {
+		return
+	}
+	span.SetTag("error", true)
+	span.SetTag("error.type", "validation_error")
+	span.SetTag("error.status_code", 400) // バリデーションエラーは通常400
+	span.SetTag("error.message", ve.Error())
+	span.SetTag("validation.error_count", len(*ve))
 }

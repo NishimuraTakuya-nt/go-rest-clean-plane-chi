@@ -54,13 +54,13 @@ func (h *Authentication) Handle() Middleware {
 			// 認証方法は適宜変更する
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				h.logger.WarnContext(r.Context(), "Missing authorization header")
+				h.logger.ErrorContext(r.Context(), "Missing authorization header")
 				rw.WriteError(apperrors.NewUnauthorizedError("Missing authorization header", nil))
 				return
 			}
 
 			if len(authHeader) <= 7 || authHeader[:7] != "Bearer " {
-				h.logger.WarnContext(r.Context(), "Invalid token format", "header", authHeader)
+				h.logger.ErrorContext(r.Context(), "Invalid token format", "header", authHeader)
 				rw.WriteError(apperrors.NewUnauthorizedError("Invalid token format", nil))
 				return
 			}
