@@ -93,13 +93,8 @@ func run() error {
 	// 2. tracer
 	ddTracer.Stop()
 
-	// 3. metrics manager
+	// 3. metrics
 	metricsManager.Stop()
-
-	// その他のリソースのクリーンアップ
-	//if err := graphQLClient.Close(); err != nil {
-	//	logger.Error("Error closing GraphQL client", slog.String("error", err.Error()))
-	//}
 
 	logger.Info("Server exited properly")
 	return nil

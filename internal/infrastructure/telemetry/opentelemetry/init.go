@@ -19,6 +19,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
+//revive:disable:exported
 type OpenTelemetryProvider struct {
 	Metrics *AppMetrics
 	Cleanup func()

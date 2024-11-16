@@ -16,7 +16,6 @@ type MetricsManager struct {
 	logger         logger.Logger
 	client         *statsd.Client
 	prefix         string
-	tags           []string
 	ctx            context.Context
 	cancel         context.CancelFunc
 	mu             sync.Mutex

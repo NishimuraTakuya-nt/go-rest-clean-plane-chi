@@ -30,27 +30,15 @@ services:
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
-      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
       # メトリクス関連の設定を追加
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true  # 他のコンテナからのメトリクス受信を許可
       - DD_DOGSTATSD_ORIGIN_DETECTION=true   # コンテナタグの自動検出
-      - DD_HOSTNAME=local-docker-host           # ホスト名の設定
       - DD_DOGSTATSD_TAG_CARDINALITY=high    # タグの詳細度設定
-      # デバッグ設定
-      - DD_LOG_LEVEL=debug
-      - DD_APM_DEBUG=true
-      - DD_DOGSTATSD_DEBUG=true             # DogStatsDのデバッグログを有効化
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
-      - /opt/datadog-agent/run:/opt/datadog-agent/run:rw  # APMデータの永続化
       - /tmp/datadog-agent-run:/opt/datadog-agent/run:rw
-    healthcheck:
-      test: [ "CMD", "agent", "health" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
 volumes:
   go-modules:

@@ -15,7 +15,6 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
-// Logger インターフェース
 type Logger interface {
 	Debug(msg string, args ...any)
 	DebugContext(ctx context.Context, msg string, args ...any)
@@ -28,12 +27,10 @@ type Logger interface {
 	With(args ...any) Logger
 }
 
-// customLogger 構造体
 type customLogger struct {
 	logger *slog.Logger
 }
 
-// NewLogger カスタムロガーを作成
 func NewLogger(cfg *config.AppConfig) Logger {
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
@@ -139,7 +136,6 @@ func (l *customLogger) With(args ...any) Logger {
 	}
 }
 
-// getLevelFromEnv
 func getLevelFromEnv(logLevel string) slog.Level {
 	switch logLevel {
 	case "DEBUG":
