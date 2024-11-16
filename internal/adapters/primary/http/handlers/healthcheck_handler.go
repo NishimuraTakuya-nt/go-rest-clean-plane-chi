@@ -5,7 +5,7 @@ import (
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
 )
 
 type HealthcheckHandler struct {
@@ -33,14 +33,8 @@ func (h *HealthcheckHandler) Get(w http.ResponseWriter, r *http.Request) {
 	//tracer := otel.Tracer("health-check-handler")
 	//_, span := tracer.Start(ctx, "health-check")
 	//defer span.End()
-	//
-	//// スパンにカスタム属性を追加
-	//span.SetAttributes(attribute.String("custom.attribute", "test-value"))
 
-	span, ctx := tracer.StartSpanFromContext(r.Context(), "test.operation",
-		tracer.SpanType("web"),
-		tracer.ResourceName("/test"),
-	)
+	ctx, span := datadog.StartOperation(r.Context())
 	defer span.Finish()
 	span.SetTag("custom.tag", "test-value")
 
