@@ -1,10 +1,10 @@
-.PHONY: lint lint-fix test build up clean wire swagger generate-mocks help
+.PHONY: lint lint-fix test down build up clean wire swagger generate-mocks help
 
 NAME := go-rest-clean-plane-chi
 DC := docker compose
 LDFLAGS := -ldflags="-s -w -extldflags \"-static\""
 
-## Local ##
+## CI #########################################################################################
 lint: ## Run linter
 	golangci-lint run
 
@@ -14,7 +14,10 @@ lint-fix: ## Run linter with fix
 test: ## Run tests
 	go test -v ./...
 
-## Container ##
+## Container ##################################################################################
+down: ## Stop container
+	$(DC) down
+
 build: ## Build image
 	$(DC) build $(NAME)
 
@@ -24,7 +27,7 @@ up: ## Run container
 clean: ## Clean up
 	docker system prune -f
 
-## Generate ##
+## Generate ###################################################################################
 wire: ## Generate wire
 	wire ./cmd/api
 
@@ -34,6 +37,7 @@ swagger: ## Generate swagger
 
 generate-mocks:
 	go generate ./internal/mocks/...
+
 
 help: ## display this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

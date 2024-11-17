@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/domain/models"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/services"
 )
 
 type AuthUsecase interface {
@@ -13,10 +13,10 @@ type AuthUsecase interface {
 }
 
 type authUsecase struct {
-	tokenService auth.TokenService
+	tokenService services.TokenService
 }
 
-func NewAuthUsecase(tokenService auth.TokenService) AuthUsecase {
+func NewAuthUsecase(tokenService services.TokenService) AuthUsecase {
 	return &authUsecase{
 		tokenService: tokenService,
 	}

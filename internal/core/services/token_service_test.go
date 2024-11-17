@@ -1,10 +1,10 @@
-package auth
+package services
 
 import (
 	"context"
 	"testing"
 
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/mocks/mockauth"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/mocks/mockservice"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ func TestGenerateToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockTokenService := mockauth.NewMockTokenService(ctrl)
+	mockTokenService := mockservice.NewMockTokenService(ctrl)
 
 	testCases := []struct {
 		name     string

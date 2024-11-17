@@ -13,8 +13,8 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/secondary/piyographql"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/services"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
@@ -32,7 +32,7 @@ func InitializeRouter(cfg *config.AppConfig, logger2 logger.Logger, metricsManag
 	jsonWriter := presenter.NewJSONWriter(logger2)
 	errorHandling := custommiddleware.NewErrorHandling(logger2, jsonWriter)
 	timeout := custommiddleware.NewTimeout(logger2, cfg)
-	tokenService := auth.NewTokenService(cfg)
+	tokenService := services.NewTokenService(cfg)
 	authUsecase := usecases.NewAuthUsecase(tokenService)
 	authentication := custommiddleware.NewAuthentication(logger2, jsonWriter, authUsecase)
 	healthcheckHandler := handlers.NewHealthcheckHandler(logger2, jsonWriter)

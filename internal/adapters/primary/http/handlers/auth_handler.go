@@ -7,8 +7,8 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/request"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/dto/response"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/presenter"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/apperrors"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 )
 

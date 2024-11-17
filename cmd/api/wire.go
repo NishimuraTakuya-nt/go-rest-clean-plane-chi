@@ -10,8 +10,8 @@ import (
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/primary/http/routes/v1"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/adapters/secondary/piyographql"
+	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/services"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/core/usecases"
-	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/auth"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/config"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/logger"
 	"github.com/NishimuraTakuya-nt/go-rest-clean-plane-chi/internal/infrastructure/telemetry/datadog"
@@ -23,7 +23,7 @@ func InitializeRouter(cfg *config.AppConfig, logger logger.Logger, metricsManage
 		presenter.Set,
 		custommiddleware.Set,
 		piyographql.Set,
-		auth.Set,
+		services.Set,
 		usecases.Set,
 		handlers.Set,
 		v1.Set,
