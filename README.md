@@ -9,10 +9,10 @@ base project for go rest api with chi
 - go-playground validator
 - chi
 - go.opentelemetry.io
-- 
+- direnv
 
 ## 実装内容
-- 標準ライブラリでのルーディング
+- Chiでのルーディング
 - Middleware
   - context value
     - request id
@@ -22,11 +22,17 @@ base project for go rest api with chi
   - エラーハンドリング（recover）
   - タイムアウト
   - 認証
+  - tracing
+  - metrics
+- カスタムエラー 
 - カスタムロガー
 - バリデーター
 - wire ジェネレート
 - swagger定義のジェネレート
 - mock ジェネレート
+- telemetry
+  - datadog
+  - opentelemetry
 - CI
   - lint
   - test
@@ -42,33 +48,29 @@ base project for go rest api with chi
 ## このプロジェクトは以下のディレクトリ構造に基づいています：
 ```
 .
-├── cmd
-│     └── api : アプリケーションのエントリーポイント
-├── docs
-│     └── swagger
-├── internal : プロジェクト固有のパッケージ
-│     ├── adapters : 外部システムとのインターフェース
-│     │     ├── primary
-│     │     │     └── http
-│     │     │         ├── handlers
-│     │     │         ├── middleware
-│     │     │         └── routes
-│     │     └── secondary
-│     │         ├── aws
-│     │         ├── db
-│     │         └── graphql
-│     ├── core : ビジネスロジック
-│     │     ├── domain
-│     │     ├── services
-│     │     └── usecases
-│     ├── errors
-│     ├── infrastructure : 技術的な実装（ロギングなど）
-│     │     ├── auth
-│     │     ├── config
-│     │     └── logger
-│     └── utils
-├── pkg
-└── scripts
+├── cmd/
+│   └── api/                 # アプリケーションのエントリーポイント
+├── docs/
+│   └── swagger/             # API仕様書（OpenAPI/Swagger）
+├── internal/
+│   ├── adapters/            # 外部システムとのインターフェース層
+│   │   ├── primary/           # 外部からのリクエストを受け付ける側のアダプター
+│   │   └── secondary/         # 外部システムへのアクセスを行う側のアダプター
+│   ├── core/                # ビジネスロジックの中心
+│   │   ├── common/            # 共通ユーティリティ
+│   │   ├── domain/            # ドメインモデルとビジネスルール
+│   │   ├── services/          # サービス
+│   │   └── usecases/          # アプリケーションのユースケース
+│   ├── infrastructure/      # 横断的・技術的な実装詳細
+│   │   ├── apperrors/         # カスタムエラー
+│   │   ├── config/            # 設定管理
+│   │   ├── logger/            # ログ機能
+│   │   ├── telemetry/         # 監視・計測（メトリクス、トレーシング）
+│   │   └── validator/         # バリデーション
+│   ├── mocks/               # モックオブジェクト
+│   └── utils/               # 汎用ユーティリティ関数
+├── scripts/                 # ビルド、デプロイ、その他のスクリプト
+└── tools/                   # 開発ツール関連
 ```
 
 ### direnv
